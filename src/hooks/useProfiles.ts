@@ -11,15 +11,32 @@ export interface UseProfilesResult {
   draft: ProfileData | null;
   customFields: CustomField[];
   loading: boolean;
+  saving: boolean;
+  adding: boolean;
   error: string | null;
   statusMessage: string;
   selectProfile: (profile: Profile) => void;
   updateDraft: (draft: ProfileData) => void;
   updateCustomFields: (fields: CustomField[]) => void;
-  save: () => Promise<void>;
+  save: () => Promise<boolean>;
   addProfile: () => Promise<void>;
-  removeProfile: () => Promise<void>;
+  removeProfile: () => Promise<boolean>;
   reload: () => Promise<void>;
+  clearStatus: () => void;
+}
+
+function syncFromProfile(
+  profile: Profile,
+  setters: {
+    setActiveId: (id: string) => void;
+    setDraft: (d: ProfileData) => void;
+    setCustomFields: (f: CustomField[]) => void;
+  },
+): void {
+  const migrated = migrateProfile(profile);
+  setters.setActiveId(migrated.id);
+  setters.setDraft({ ...migrated.data });
+  setters.setCustomFields([...migrated.customFields]);
 }
 
 export function useProfiles(enabled: boolean): UseProfilesResult {
@@ -28,15 +45,13 @@ export function useProfiles(enabled: boolean): UseProfilesResult {
   const [draft, setDraft] = useState<ProfileData | null>(null);
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
 
   const applyProfile = useCallback((profile: Profile) => {
-    const migrated = migrateProfile(profile);
-    setActiveId(migrated.id);
-    setDraft({ ...migrated.data });
-    setCustomFields([...migrated.customFields]);
-    setStatusMessage("");
+    syncFromProfile(profile, { setActiveId, setDraft, setCustomFields });
     setError(null);
   }, []);
 
@@ -61,18 +76,20 @@ export function useProfiles(enabled: boolean): UseProfilesResult {
     } finally {
       setLoading(false);
     }
-  }, [enabled, applyProfile]);
+  }, [enabled, activeId, applyProfile]);
 
   useEffect(() => {
     void reload();
   }, [enabled]);
 
-  const save = useCallback(async () => {
-    if (!draft || !activeId) return;
+  const save = useCallback(async (): Promise<boolean> => {
+    if (!draft || !activeId) return false;
     const profile = profiles.find((p) => p.id === activeId);
-    if (!profile) return;
+    if (!profile) return false;
+    setSaving(true);
+    setError(null);
     try {
-      const updated = await sendMessage({
+      const { profile: saved } = await sendMessage({
         type: "SAVE_PROFILE",
         profile: {
           ...profile,
@@ -81,37 +98,51 @@ export function useProfiles(enabled: boolean): UseProfilesResult {
           updatedAt: Date.now(),
         },
       });
+      const migrated = migrateProfile(saved);
+      setProfiles((prev) => prev.map((p) => (p.id === migrated.id ? migrated : p)));
+      syncFromProfile(migrated, { setActiveId, setDraft, setCustomFields });
       setStatusMessage("Saved");
-      setProfiles((prev) =>
-        prev.map((p) => (p.id === updated.profile.id ? migrateProfile(updated.profile) : p)),
-      );
+      return true;
     } catch (e) {
       setError(toErrorMessage(e, "Save failed"));
+      return false;
+    } finally {
+      setSaving(false);
     }
   }, [activeId, draft, customFields, profiles]);
 
   const addProfile = useCallback(async () => {
+    setAdding(true);
+    setError(null);
     try {
       const created = createProfile(`Profile ${profiles.length + 1}`);
       const { profile } = await sendMessage({ type: "SAVE_PROFILE", profile: created });
       const migrated = migrateProfile(profile);
       setProfiles((prev) => [...prev, migrated]);
       applyProfile(migrated);
+      setStatusMessage("Profile created");
     } catch (e) {
       setError(toErrorMessage(e, "Could not add profile"));
+    } finally {
+      setAdding(false);
     }
   }, [profiles.length, applyProfile]);
 
-  const removeProfile = useCallback(async () => {
-    if (!activeId || profiles.length <= 1) return;
+  const removeProfile = useCallback(async (): Promise<boolean> => {
+    if (!activeId || profiles.length <= 1) return false;
+    setSaving(true);
     try {
       await sendMessage({ type: "DELETE_PROFILE", profileId: activeId });
-      setStatusMessage("Deleted");
       const remaining = profiles.filter((p) => p.id !== activeId);
       setProfiles(remaining);
       if (remaining[0]) applyProfile(remaining[0]);
+      setStatusMessage("Profile deleted");
+      return true;
     } catch (e) {
       setError(toErrorMessage(e, "Delete failed"));
+      return false;
+    } finally {
+      setSaving(false);
     }
   }, [activeId, profiles, applyProfile]);
 
@@ -121,6 +152,8 @@ export function useProfiles(enabled: boolean): UseProfilesResult {
     draft,
     customFields,
     loading,
+    saving,
+    adding,
     error,
     statusMessage,
     selectProfile: applyProfile,
@@ -130,5 +163,6 @@ export function useProfiles(enabled: boolean): UseProfilesResult {
     addProfile,
     removeProfile,
     reload,
+    clearStatus: () => setStatusMessage(""),
   };
 }

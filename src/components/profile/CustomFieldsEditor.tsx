@@ -98,7 +98,8 @@ export function CustomFieldsEditor({
         </Button>
       </div>
       <p className="mt-1 text-xs text-perfil-muted">
-        Name fields anything you need (e.g. eye power). They are matched on web forms by label.
+        Name fields anything you need (e.g. eye power). They are matched on web forms by label. Click{" "}
+        <strong className="font-medium text-perfil-text">Save profile</strong> above to keep changes.
       </p>
 
       <div className="mt-4 space-y-4">

@@ -50,6 +50,9 @@ describe("VaultService", () => {
 
     const good = await vault.unlock("test-password-123");
     expect(good.ok).toBe(true);
-    expect(vault.getProfiles()[0]?.data.label).toBe("Personal");
+    const personal = vault.getProfiles()[0];
+    expect(personal?.data.label).toBe("Personal");
+    expect(personal?.data.email).toBe("alex.morgan@example.com");
+    expect(personal?.customFields.length).toBeGreaterThan(0);
   });
 });

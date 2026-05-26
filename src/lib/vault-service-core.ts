@@ -1,6 +1,7 @@
 import { duplicateCustomField, sortCustomFields } from "@/lib/custom-field";
 import { migratePayload, migrateProfile } from "@/lib/profile-migrate";
-import { createProfile, defaultVaultPayload, defaultVaultSettings } from "@/lib/profile-defaults";
+import { createDefaultPersonalProfile } from "@/lib/default-personal-profile";
+import { defaultVaultPayload, defaultVaultSettings } from "@/lib/profile-defaults";
 import { clearSession, loadSession, saveSession } from "@/lib/session-storage";
 import { loadEncryptedVault, saveEncryptedVault, vaultExists } from "@/lib/storage";
 import type { Profile } from "@/types/profile";
@@ -124,7 +125,7 @@ export class VaultService {
 
     const payload: VaultPayload = {
       ...defaultVaultPayload(),
-      profiles: [createProfile("Personal")],
+      profiles: [createDefaultPersonalProfile()],
     };
     payload.settings.defaultProfileId = payload.profiles[0]?.id ?? null;
 
@@ -208,13 +209,13 @@ export class VaultService {
     return this.payload?.profiles ?? [];
   }
 
-  saveProfile(profile: Profile): Profile {
+  async saveProfile(profile: Profile): Promise<Profile> {
     if (!this.payload) throw new Error("Vault locked");
     const updated = migrateProfile({ ...profile, updatedAt: Date.now() });
     const idx = this.payload.profiles.findIndex((p) => p.id === profile.id);
     if (idx >= 0) this.payload.profiles[idx] = updated;
     else this.payload.profiles.push(updated);
-    void this.persistCurrent();
+    await this.persistCurrent();
     this.touchActivity();
     return updated;
   }

@@ -2,6 +2,7 @@ import { CustomFieldsEditor } from "@/components/profile/CustomFieldsEditor";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Panel } from "@/components/ui/Panel";
+import { Toast } from "@/components/ui/Toast";
 import { PROFILE_FIELD_GROUPS, PROFILE_FIELD_LABELS } from "@/shared/profile-fields";
 import type { CustomField, Profile, ProfileData, ProfileFieldKey } from "@/types/profile";
 
@@ -13,10 +14,12 @@ export interface ProfileEditorProps {
   onChange: (draft: ProfileData) => void;
   onCustomFieldsChange: (fields: CustomField[]) => void;
   onTransferComplete?: () => void;
-  onSave: () => void;
-  onDelete?: () => void;
+  onSave: () => Promise<boolean>;
+  onDelete?: () => Promise<boolean>;
   canDelete?: boolean;
+  saving?: boolean;
   statusMessage?: string;
+  onStatusDismiss?: () => void;
 }
 
 export function ProfileEditor({
@@ -30,7 +33,9 @@ export function ProfileEditor({
   onSave,
   onDelete,
   canDelete = false,
+  saving = false,
   statusMessage,
+  onStatusDismiss,
 }: ProfileEditorProps) {
   const profileForCustom: Profile = {
     id: profileId,
@@ -39,12 +44,40 @@ export function ProfileEditor({
     createdAt: 0,
     updatedAt: 0,
   };
+
   function updateField(key: ProfileFieldKey | "label", value: string) {
     onChange({ ...draft, [key]: value });
   }
 
+  const showSaved = statusMessage === "Saved" || statusMessage === "Profile created";
+
   return (
-    <Panel>
+    <Panel className="mt-4">
+      <div className="sticky top-0 z-10 -mx-5 -mt-5 mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-perfil-border bg-perfil-surface/95 px-5 py-3 backdrop-blur-sm">
+        <Toast
+          message={statusMessage ?? ""}
+          variant={showSaved ? "success" : "info"}
+          show={Boolean(statusMessage)}
+          onDismiss={onStatusDismiss}
+          className="flex-1 min-w-[200px]"
+        />
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => void onSave()} disabled={saving} className="!w-auto px-5">
+            {saving ? "Saving…" : "Save profile"}
+          </Button>
+          {onDelete && (
+            <Button
+              variant="danger"
+              onClick={() => void onDelete()}
+              disabled={!canDelete || saving}
+              className="text-sm"
+            >
+              Delete
+            </Button>
+          )}
+        </div>
+      </div>
+
       <Input
         label="Profile name"
         value={draft.label}
@@ -75,16 +108,6 @@ export function ProfileEditor({
         onChange={onCustomFieldsChange}
         onTransferComplete={onTransferComplete}
       />
-
-      <div className="mt-8 flex flex-wrap items-center gap-3">
-        <Button onClick={onSave}>Save changes</Button>
-        {onDelete && (
-          <Button variant="danger" onClick={onDelete} disabled={!canDelete} className="text-sm">
-            Delete profile
-          </Button>
-        )}
-        {statusMessage && <span className="text-xs font-medium text-perfil-success">{statusMessage}</span>}
-      </div>
     </Panel>
   );
 }
