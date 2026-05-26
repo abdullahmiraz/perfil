@@ -2,19 +2,20 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Toast } from "@/components/ui/Toast";
+import { HoverTip } from "@/components/ui/HoverTip";
 import { MasterPasswordForm } from "@/components/auth/MasterPasswordForm";
 import { RecoveryResetForm } from "@/components/auth/RecoveryResetForm";
 import { VaultSetupWizard } from "@/components/auth/VaultSetupWizard";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageShell } from "@/components/layout/PageShell";
 import { PopupHeaderActions } from "@/components/popup/PopupHeaderActions";
-import { PopupHomePanel } from "@/components/popup/PopupHomePanel";
 import { SiteToolsPanel } from "@/components/popup/SiteToolsPanel";
 import { ProfilePicker } from "@/components/profile/ProfilePicker";
 import { useFillActions } from "@/hooks/useFillActions";
 import { useFeedback } from "@/hooks/useFeedback";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useVault } from "@/hooks/useVault";
+import { openOptions } from "@/lib/open-options";
 import { sendMessage } from "@/shared/messages";
 import type { VaultSetupOptions } from "@/types/vault";
 
@@ -57,10 +58,6 @@ export function App() {
       onLock={vault.status === "unlocked" ? () => void handleLock() : undefined}
     />
   );
-
-  function openOptions() {
-    void chrome.runtime.openOptionsPage();
-  }
 
   async function handleLock() {
     fill.clearMessages();
@@ -211,12 +208,15 @@ export function App() {
     );
   }
 
+  const activeProfile = profiles.profiles.find((p) => p.id === selectedId);
+  const profileLabel = activeProfile?.data.label || "Profile";
+
   return (
     <PageShell>
       {toast}
       <AppHeader compact hideSubtitle actions={headerActions} />
 
-      <div className="mt-3 flex items-end gap-2">
+      <div className="mt-3 flex items-end gap-1.5">
         <div className="min-w-0 flex-1">
           <ProfilePicker
             profiles={profiles.profiles}
@@ -225,37 +225,44 @@ export function App() {
             compact
           />
         </div>
-        <Button
-          variant="secondary"
-          onClick={fill.scan}
-          disabled={fill.busy}
-          className="btn-compact shrink-0"
-          title="Find fillable fields on this tab"
-        >
-          Scan
-        </Button>
-        <Button
-          onClick={() => fill.fill(selectedId || undefined)}
-          disabled={fill.busy}
-          className="btn-compact shrink-0"
-          title="Apply the selected profile to this page"
-        >
-          Fill
-        </Button>
+        <HoverTip text={`Edit ${profileLabel} — name, email, address, custom fields`}>
+          <button
+            type="button"
+            onClick={() => void openOptions("profiles")}
+            className="btn-compact shrink-0 rounded-lg border border-perfil-border bg-perfil-surface px-2 py-1.5 text-[11px] font-medium text-perfil-text hover:border-perfil-accent/50"
+          >
+            Edit
+          </button>
+        </HoverTip>
+        <HoverTip text="Find inputs on this tab that match your profile">
+          <Button
+            variant="secondary"
+            onClick={fill.scan}
+            disabled={fill.busy}
+            className="btn-compact shrink-0"
+          >
+            Scan
+          </Button>
+        </HoverTip>
+        <HoverTip text="Apply the selected profile to matching fields">
+          <Button
+            onClick={() => fill.fill(selectedId || undefined)}
+            disabled={fill.busy}
+            className="btn-compact shrink-0"
+          >
+            Fill
+          </Button>
+        </HoverTip>
       </div>
 
       {(fill.info || fill.error) && (
-        <p className={`mt-2 text-[11px] ${fill.error ? "text-perfil-danger" : "text-perfil-success"}`}>
+        <p
+          className={`mt-1.5 text-[11px] leading-snug ${fill.error ? "text-perfil-danger" : "text-perfil-muted"}`}
+          role="status"
+        >
           {fill.error ?? fill.info}
         </p>
       )}
-
-      <PopupHomePanel
-        profileCount={profiles.profiles.length}
-        onOpenProfiles={openOptions}
-        onOpenSettings={openOptions}
-        onLock={() => void handleLock()}
-      />
 
       <SiteToolsPanel
         onFeedback={(msg, v) => (v === "error" ? feedback.showError(msg) : feedback.showSuccess(msg))}

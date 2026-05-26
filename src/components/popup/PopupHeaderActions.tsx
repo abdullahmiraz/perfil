@@ -3,6 +3,7 @@ import {
   HeaderToolbarButton,
   ThemeToolbarButton,
 } from "@/components/layout/HeaderToolbar";
+import { openOptions } from "@/lib/open-options";
 
 export interface PopupHeaderActionsProps {
   showLock?: boolean;
@@ -20,8 +21,8 @@ export function PopupHeaderActions({
       <ThemeToolbarButton />
       {showSettings && (
         <HeaderToolbarButton
-          title="Settings"
-          onClick={() => chrome.runtime.openOptionsPage()}
+          title="Security, backup, and appearance"
+          onClick={() => void openOptions("settings")}
         >
           🛠
         </HeaderToolbarButton>

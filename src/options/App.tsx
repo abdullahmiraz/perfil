@@ -10,6 +10,7 @@ import { Toast } from "@/components/ui/Toast";
 import { useFeedback } from "@/hooks/useFeedback";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useVault } from "@/hooks/useVault";
+import { consumeOptionsTab } from "@/lib/open-options";
 
 type Tab = "profiles" | "settings";
 
@@ -18,6 +19,12 @@ export function App() {
   const profiles = useProfiles(vault.status === "unlocked");
   const settingsFeedback = useFeedback();
   const [tab, setTab] = useState<Tab>("profiles");
+
+  useEffect(() => {
+    void consumeOptionsTab().then((t) => {
+      if (t) setTab(t);
+    });
+  }, []);
 
   useEffect(() => {
     if (!profiles.statusMessage) return;

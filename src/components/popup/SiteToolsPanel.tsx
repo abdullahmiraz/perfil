@@ -47,6 +47,7 @@ function ActionButton({
 
 export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
   const [contextMenuOn, setContextMenuOn] = useState(false);
+  const [fieldPickerOn, setFieldPickerOn] = useState(false);
   const [status, setStatus] = useState<FormDraftStatus | null>(null);
   const [pageError, setPageError] = useState<string | null>(null);
   const [selectedSaveId, setSelectedSaveId] = useState("");
@@ -58,6 +59,7 @@ export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
       sendMessage({ type: "GET_TAB_FORM_DRAFT_STATUS" }),
     ]);
     setContextMenuOn(settingsRes.settings.contextMenuEnabled);
+    setFieldPickerOn(settingsRes.settings.fieldPickerEnabled);
     if ("error" in draftRes) {
       setPageError(draftRes.error);
       setStatus(null);
@@ -83,6 +85,15 @@ export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
     });
     setContextMenuOn(res.settings.contextMenuEnabled);
     onFeedback(enabled ? "Menu on" : "Menu off", "success");
+  }
+
+  async function toggleFieldPicker(enabled: boolean) {
+    const res = await sendMessage({
+      type: "SAVE_SETTINGS",
+      settings: { fieldPickerEnabled: enabled },
+    });
+    setFieldPickerOn(res.settings.fieldPickerEnabled);
+    onFeedback(enabled ? "Field picker on" : "Field picker off", "success");
   }
 
   async function saveDraft() {
@@ -142,6 +153,12 @@ export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
 
   return (
     <div className="mt-2 space-y-1.5 border-t border-perfil-border pt-2">
+      <CompactToggle
+        checked={fieldPickerOn}
+        onChange={(v) => void toggleFieldPicker(v)}
+        label="Field picker"
+        info="When you focus an input, choose which profile value to fill that field."
+      />
       <CompactToggle
         checked={contextMenuOn}
         onChange={(v) => void toggleContextMenu(v)}
