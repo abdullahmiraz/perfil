@@ -1,18 +1,21 @@
 import { useCallback, useEffect, useState } from "react";
 import { createProfile } from "@/lib/profile-defaults";
+import { migrateProfile } from "@/lib/profile-migrate";
 import { toErrorMessage } from "@/shared/errors";
 import { sendMessage } from "@/shared/messages";
-import type { Profile, ProfileData } from "@/types/profile";
+import type { CustomField, Profile, ProfileData } from "@/types/profile";
 
 export interface UseProfilesResult {
   profiles: Profile[];
   activeId: string;
   draft: ProfileData | null;
+  customFields: CustomField[];
   loading: boolean;
   error: string | null;
   statusMessage: string;
   selectProfile: (profile: Profile) => void;
   updateDraft: (draft: ProfileData) => void;
+  updateCustomFields: (fields: CustomField[]) => void;
   save: () => Promise<void>;
   addProfile: () => Promise<void>;
   removeProfile: () => Promise<void>;
@@ -23,13 +26,16 @@ export function useProfiles(enabled: boolean): UseProfilesResult {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeId, setActiveId] = useState("");
   const [draft, setDraft] = useState<ProfileData | null>(null);
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState("");
 
-  const selectProfile = useCallback((profile: Profile) => {
-    setActiveId(profile.id);
-    setDraft({ ...profile.data });
+  const applyProfile = useCallback((profile: Profile) => {
+    const migrated = migrateProfile(profile);
+    setActiveId(migrated.id);
+    setDraft({ ...migrated.data });
+    setCustomFields([...migrated.customFields]);
     setStatusMessage("");
     setError(null);
   }, []);
@@ -42,26 +48,24 @@ export function useProfiles(enabled: boolean): UseProfilesResult {
     setLoading(true);
     try {
       const { profiles: list } = await sendMessage({ type: "GET_PROFILES" });
-      setProfiles(list);
-      setActiveId((prev) => {
-        const current = list.find((p) => p.id === prev) ?? list[0];
-        if (current) {
-          setDraft({ ...current.data });
-          return current.id;
-        }
+      const migrated = list.map(migrateProfile);
+      setProfiles(migrated);
+      const current = migrated.find((p) => p.id === activeId) ?? migrated[0];
+      if (current) applyProfile(current);
+      else {
         setDraft(null);
-        return "";
-      });
+        setCustomFields([]);
+      }
     } catch (e) {
       setError(toErrorMessage(e, "Failed to load profiles"));
     } finally {
       setLoading(false);
     }
-  }, [enabled]);
+  }, [enabled, applyProfile]);
 
   useEffect(() => {
     void reload();
-  }, [reload]);
+  }, [enabled]);
 
   const save = useCallback(async () => {
     if (!draft || !activeId) return;
@@ -70,27 +74,33 @@ export function useProfiles(enabled: boolean): UseProfilesResult {
     try {
       const updated = await sendMessage({
         type: "SAVE_PROFILE",
-        profile: { ...profile, data: draft, updatedAt: Date.now() },
+        profile: {
+          ...profile,
+          data: draft,
+          customFields,
+          updatedAt: Date.now(),
+        },
       });
       setStatusMessage("Saved");
       setProfiles((prev) =>
-        prev.map((p) => (p.id === updated.profile.id ? updated.profile : p)),
+        prev.map((p) => (p.id === updated.profile.id ? migrateProfile(updated.profile) : p)),
       );
     } catch (e) {
       setError(toErrorMessage(e, "Save failed"));
     }
-  }, [activeId, draft, profiles]);
+  }, [activeId, draft, customFields, profiles]);
 
   const addProfile = useCallback(async () => {
     try {
       const created = createProfile(`Profile ${profiles.length + 1}`);
       const { profile } = await sendMessage({ type: "SAVE_PROFILE", profile: created });
-      setProfiles((prev) => [...prev, profile]);
-      selectProfile(profile);
+      const migrated = migrateProfile(profile);
+      setProfiles((prev) => [...prev, migrated]);
+      applyProfile(migrated);
     } catch (e) {
       setError(toErrorMessage(e, "Could not add profile"));
     }
-  }, [profiles.length, selectProfile]);
+  }, [profiles.length, applyProfile]);
 
   const removeProfile = useCallback(async () => {
     if (!activeId || profiles.length <= 1) return;
@@ -99,21 +109,23 @@ export function useProfiles(enabled: boolean): UseProfilesResult {
       setStatusMessage("Deleted");
       const remaining = profiles.filter((p) => p.id !== activeId);
       setProfiles(remaining);
-      if (remaining[0]) selectProfile(remaining[0]);
+      if (remaining[0]) applyProfile(remaining[0]);
     } catch (e) {
       setError(toErrorMessage(e, "Delete failed"));
     }
-  }, [activeId, profiles, selectProfile]);
+  }, [activeId, profiles, applyProfile]);
 
   return {
     profiles,
     activeId,
     draft,
+    customFields,
     loading,
     error,
     statusMessage,
-    selectProfile,
+    selectProfile: applyProfile,
     updateDraft: setDraft,
+    updateCustomFields: setCustomFields,
     save,
     addProfile,
     removeProfile,

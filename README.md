@@ -22,10 +22,11 @@ Perfil is **not** a password manager. It focuses on what password managers do po
 
 | Phase | Scope | Status |
 |-------|--------|--------|
-| **1** | Extension scaffold, profiles UI, rule-based fill | ✅ Current |
-| **2** | AES-GCM vault, PBKDF2, auto-lock, backup export | Planned |
-| **3** | Radio/checkbox/select/date, per-site overrides | Planned |
-| **4** | Optional AI for low-confidence fields (BYOK) | Planned |
+| **1** | Extension scaffold, profiles UI, rule-based fill | ✅ Done |
+| **2** | Custom fields, import/export, PIN, session unlock | ✅ Current |
+| **3** | AES-GCM vault, PBKDF2 (real encryption) | Planned |
+| **4** | Radio/checkbox/select/date, per-site overrides | Planned |
+| **5** | Optional AI for low-confidence fields (BYOK) | Planned |
 
 > **v0.1.0 note:** The vault uses local storage with a password verifier. **Phase 2** replaces this with full AES-256-GCM encryption via the Web Crypto API. Do not store highly sensitive data (government IDs, payment cards) until Phase 2 ships.
 

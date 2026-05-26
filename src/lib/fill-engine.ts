@@ -1,5 +1,5 @@
 import { detectFields, getFieldElement } from "@/lib/field-detector";
-import { matchField } from "@/lib/field-matcher";
+import { matchProfileField } from "@/lib/profile-match";
 import type { FillResult } from "@/types/fill";
 import type { Profile, ProfileFieldKey } from "@/types/profile";
 
@@ -45,13 +45,8 @@ export function fillPage(
   const matches: FillResult["matches"] = [];
 
   for (const field of fields) {
-    const match = matchField(field, profile.data);
+    const match = matchProfileField(field, profile);
     if (!match || match.confidence < minConfidence) {
-      skipped++;
-      continue;
-    }
-    const value = profile.data[match.fieldKey];
-    if (!value) {
       skipped++;
       continue;
     }
@@ -60,13 +55,15 @@ export function fillPage(
       skipped++;
       continue;
     }
-    setNativeValue(el, value);
+    setNativeValue(el, match.value);
     flash(el);
     filled++;
-    matches.push({
-      fieldKey: match.fieldKey as ProfileFieldKey,
-      confidence: match.confidence,
-    });
+    if (!String(match.source).startsWith("custom:")) {
+      matches.push({
+        fieldKey: match.source as ProfileFieldKey,
+        confidence: match.confidence,
+      });
+    }
   }
 
   return { filled, skipped, matches };
@@ -76,10 +73,10 @@ export function scanPage(profile: Profile, root: ParentNode = document) {
   const fields = detectFields(root);
   const matches = fields
     .map((field) => {
-      const match = matchField(field, profile.data);
+      const match = matchProfileField(field, profile);
       if (!match) return null;
       return {
-        fieldKey: match.fieldKey,
+        fieldKey: String(match.source),
         confidence: match.confidence,
         label: field.label || field.name || field.id || field.placeholder || "field",
       };

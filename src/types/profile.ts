@@ -23,9 +23,43 @@ export interface ProfileData {
 
 export type ProfileFieldKey = keyof Omit<ProfileData, "label">;
 
+export type CustomFieldType =
+  | "text"
+  | "email"
+  | "tel"
+  | "textarea"
+  | "date"
+  | "time"
+  | "color"
+  | "url"
+  | "select";
+
+export interface CustomField {
+  id: string;
+  label: string;
+  type: CustomFieldType;
+  value: string;
+  /** Options for `select` fields */
+  options?: string[];
+  order: number;
+}
+
 export interface Profile {
   id: string;
   data: ProfileData;
+  customFields: CustomField[];
   createdAt: number;
   updatedAt: number;
 }
+
+export const CUSTOM_FIELD_TYPES: { value: CustomFieldType; label: string }[] = [
+  { value: "text", label: "Text" },
+  { value: "email", label: "Email" },
+  { value: "tel", label: "Phone" },
+  { value: "textarea", label: "Long text" },
+  { value: "date", label: "Date" },
+  { value: "time", label: "Time" },
+  { value: "color", label: "Color" },
+  { value: "url", label: "URL" },
+  { value: "select", label: "Dropdown" },
+];

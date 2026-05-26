@@ -1,16 +1,24 @@
 import type { FillResult } from "@/types/fill";
 import type { Profile } from "@/types/profile";
-import type { VaultStatus } from "@/types/vault";
+import type { VaultSettings, VaultStatus } from "@/types/vault";
 
-/** Background ↔ popup/options response map (keyed by request type). */
 export interface MessageResponses {
   GET_STATUS: { status: VaultStatus; profileCount: number };
   UNLOCK: { ok: boolean; error?: string };
+  UNLOCK_PIN: { ok: boolean; error?: string };
   LOCK: { ok: boolean };
   SETUP: { ok: boolean; error?: string };
   GET_PROFILES: { profiles: Profile[] };
+  GET_SETTINGS: { settings: VaultSettings };
+  SAVE_SETTINGS: { settings: VaultSettings };
+  SET_PIN: { ok: boolean; error?: string };
+  CLEAR_PIN: { ok: boolean; error?: string };
   SAVE_PROFILE: { profile: Profile };
   DELETE_PROFILE: { ok: boolean };
+  COPY_CUSTOM_FIELDS: { ok: boolean; error?: string };
+  EXPORT_VAULT: { json: string };
+  IMPORT_VAULT: { ok: boolean; error?: string; count?: number };
+  TOUCH_ACTIVITY: { ok: boolean };
   FILL_ACTIVE_TAB: { result?: FillResult; error?: string };
   SCAN_ACTIVE_TAB: { fields: number; error?: string };
 }
@@ -23,9 +31,24 @@ export type MessageRequest =
   | { type: "GET_STATUS" }
   | { type: "LOCK" }
   | { type: "UNLOCK"; password: string }
+  | { type: "UNLOCK_PIN"; pin: string }
   | { type: "SETUP"; password: string }
   | { type: "GET_PROFILES" }
+  | { type: "GET_SETTINGS" }
+  | { type: "SAVE_SETTINGS"; settings: Partial<VaultSettings> }
+  | { type: "SET_PIN"; pin: string; masterPassword: string }
+  | { type: "CLEAR_PIN"; masterPassword: string }
   | { type: "SAVE_PROFILE"; profile: Profile }
   | { type: "DELETE_PROFILE"; profileId: string }
+  | {
+      type: "COPY_CUSTOM_FIELDS";
+      sourceProfileId: string;
+      targetProfileId: string;
+      fieldIds: string[];
+      mode: "copy" | "move";
+    }
+  | { type: "EXPORT_VAULT" }
+  | { type: "IMPORT_VAULT"; json: string; mode: "merge" | "replace" }
+  | { type: "TOUCH_ACTIVITY" }
   | { type: "FILL_ACTIVE_TAB"; profileId?: string; minConfidence?: number }
   | { type: "SCAN_ACTIVE_TAB" };

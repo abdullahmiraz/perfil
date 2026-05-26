@@ -1,8 +1,8 @@
 import { detectFields, getFieldElement } from "@/lib/field-detector";
-import { matchField } from "@/lib/field-matcher";
-import { fillPage, scanPage } from "@/lib/fill-engine";
+import { fillPage } from "@/lib/fill-engine";
+import { matchProfileField } from "@/lib/profile-match";
 import type { FillResult } from "@/types/fill";
-import type { Profile, ProfileFieldKey } from "@/types/profile";
+import type { Profile } from "@/types/profile";
 
 export interface FieldScanRow {
   index: number;
@@ -23,7 +23,7 @@ export interface ScanReport {
 
 export interface FillFieldRow {
   label: string;
-  fieldKey: ProfileFieldKey;
+  fieldKey: string;
   value: string;
   filled: boolean;
 }
@@ -36,23 +36,20 @@ function fieldLabel(field: { label: string; name: string; id: string; placeholde
   return field.label || field.name || field.id || field.placeholder || "field";
 }
 
-/** Programmatic scan API — used by dev harness, tests, and agents. */
 export function scanForm(profile: Profile, root: ParentNode = document, minConfidence = 0.55): ScanReport {
   const fields = detectFields(root);
   const rows: FieldScanRow[] = fields.map((field) => {
-    const match = matchField(field, profile.data);
-    const value = match ? profile.data[match.fieldKey as ProfileFieldKey] : null;
-    const willFill = Boolean(
-      match && match.confidence >= minConfidence && value,
-    );
+    const match = matchProfileField(field, profile);
+    const value = match?.value ?? null;
+    const willFill = Boolean(match && match.confidence >= minConfidence && value);
     return {
       index: field.index,
       label: fieldLabel(field),
       name: field.name,
       type: field.type,
-      fieldKey: match?.fieldKey ?? null,
+      fieldKey: match ? String(match.source) : null,
       confidence: match?.confidence ?? null,
-      value: value || null,
+      value,
       willFill,
     };
   });
@@ -64,7 +61,6 @@ export function scanForm(profile: Profile, root: ParentNode = document, minConfi
   };
 }
 
-/** Programmatic fill API — returns structured report of what was filled. */
 export function fillForm(
   profile: Profile,
   root: ParentNode = document,
@@ -77,11 +73,12 @@ export function fillForm(
     .filter((r) => r.willFill && r.fieldKey)
     .map((r) => {
       const el = getFieldElement(r.index, root);
-      const expected = profile.data[r.fieldKey as ProfileFieldKey];
-      const actual = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ? el.value : "";
+      const expected = r.value ?? "";
+      const actual =
+        el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ? el.value : "";
       return {
         label: r.label,
-        fieldKey: r.fieldKey as ProfileFieldKey,
+        fieldKey: r.fieldKey!,
         value: expected,
         filled: actual === expected,
       };
@@ -90,7 +87,6 @@ export function fillForm(
   return { ...result, rows };
 }
 
-/** Read current form values from DOM (for harness / verification). */
 export function readFormValues(root: ParentNode = document): Record<string, string> {
   const out: Record<string, string> = {};
   for (const field of detectFields(root)) {
@@ -100,8 +96,4 @@ export function readFormValues(root: ParentNode = document): Record<string, stri
     out[key] = el.value;
   }
   return out;
-}
-
-export function scanFormSummary(profile: Profile, root?: ParentNode) {
-  return scanPage(profile, root);
 }

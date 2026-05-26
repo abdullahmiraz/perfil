@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const store: Record<string, unknown> = {};
 
+const sessionStore: Record<string, unknown> = {};
+
 vi.stubGlobal("chrome", {
   storage: {
     local: {
@@ -14,12 +16,23 @@ vi.stubGlobal("chrome", {
         keys.forEach((k) => delete store[k]);
       }),
     },
+    session: {
+      get: vi.fn(async (key: string) => ({ [key]: sessionStore[key] })),
+      set: vi.fn(async (obj: Record<string, unknown>) => {
+        Object.assign(sessionStore, obj);
+      }),
+      remove: vi.fn(async (key: string | string[]) => {
+        const keys = Array.isArray(key) ? key : [key];
+        keys.forEach((k) => delete sessionStore[k]);
+      }),
+    },
   },
 });
 
 describe("VaultService", () => {
   beforeEach(() => {
     Object.keys(store).forEach((k) => delete store[k]);
+    Object.keys(sessionStore).forEach((k) => delete sessionStore[k]);
     vi.resetModules();
   });
 

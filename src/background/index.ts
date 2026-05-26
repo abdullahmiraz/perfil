@@ -18,15 +18,27 @@ function fallbackError(type: MessageType, err: unknown): MessageResponse<Message
   switch (type) {
     case "GET_STATUS":
       return { status: "uninitialized", profileCount: 0 };
+    case "GET_SETTINGS":
+      return { settings: vaultService.getSettings() };
     case "UNLOCK":
+    case "UNLOCK_PIN":
     case "SETUP":
+    case "SET_PIN":
+    case "CLEAR_PIN":
+    case "COPY_CUSTOM_FIELDS":
+    case "IMPORT_VAULT":
       return { ok: false, error: msg };
+    case "EXPORT_VAULT":
+      return { json: "{}" };
     case "LOCK":
+    case "TOUCH_ACTIVITY":
     case "DELETE_PROFILE":
       return { ok: false };
     case "GET_PROFILES":
       return { profiles: [] };
     case "SAVE_PROFILE":
+      throw err;
+    case "SAVE_SETTINGS":
       throw err;
     case "SCAN_ACTIVE_TAB":
       return { fields: 0, error: msg };
@@ -41,12 +53,17 @@ async function handleMessage(
   request: MessageRequest,
 ): Promise<MessageResponse<MessageType>> {
   await vaultService.whenReady();
+  if (vaultService.isUnlocked() && request.type !== "LOCK" && request.type !== "SETUP") {
+    vaultService.touchActivity();
+  }
 
   switch (request.type) {
     case "GET_STATUS":
       return vaultService.getStatus();
     case "UNLOCK":
       return vaultService.unlock(request.password);
+    case "UNLOCK_PIN":
+      return vaultService.unlockWithPin(request.pin);
     case "LOCK":
       await vaultService.lock();
       return { ok: true };
@@ -54,10 +71,32 @@ async function handleMessage(
       return vaultService.setup(request.password);
     case "GET_PROFILES":
       return { profiles: vaultService.getProfiles() };
+    case "GET_SETTINGS":
+      return { settings: vaultService.getSettings() };
+    case "SAVE_SETTINGS":
+      return { settings: await vaultService.saveSettings(request.settings) };
+    case "SET_PIN":
+      return vaultService.setPin(request.pin, request.masterPassword);
+    case "CLEAR_PIN":
+      return vaultService.clearPin(request.masterPassword);
     case "SAVE_PROFILE":
       return { profile: vaultService.saveProfile(request.profile) };
     case "DELETE_PROFILE":
       return { ok: vaultService.deleteProfile(request.profileId) };
+    case "COPY_CUSTOM_FIELDS":
+      return vaultService.copyCustomFields(
+        request.sourceProfileId,
+        request.targetProfileId,
+        request.fieldIds,
+        request.mode,
+      );
+    case "EXPORT_VAULT":
+      return { json: JSON.stringify(vaultService.exportBundle(), null, 2) };
+    case "IMPORT_VAULT":
+      return vaultService.importBundle(request.json, request.mode);
+    case "TOUCH_ACTIVITY":
+      vaultService.touchActivity();
+      return { ok: true };
     case "SCAN_ACTIVE_TAB":
       return scanActiveTab();
     case "FILL_ACTIVE_TAB":
@@ -81,10 +120,8 @@ async function scanActiveTab(): Promise<MessageResponse<"SCAN_ACTIVE_TAB">> {
   if (isRestrictedUrl(tab.url)) {
     return { fields: 0, error: "Cannot scan this page (browser internal page)" };
   }
-
   const profile = vaultService.resolveProfile();
   if (!profile) return { fields: 0, error: "No profile available" };
-
   try {
     const response = await sendTabMessage<{ fieldCount: number }>(tab.id!, {
       type: "SCAN_FIELDS",
@@ -107,12 +144,8 @@ async function fillActiveTab(
   if (isRestrictedUrl(tab.url)) {
     return { error: "Cannot fill this page (browser internal page)" };
   }
-
   const profile = vaultService.resolveProfile(profileId);
-  if (!profile) {
-    return { error: "No profile selected" };
-  }
-
+  if (!profile) return { error: "No profile selected" };
   try {
     const result = await sendTabMessage<FillResult>(tab.id!, {
       type: "FILL_FIELDS",

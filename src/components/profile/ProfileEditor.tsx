@@ -1,12 +1,18 @@
+import { CustomFieldsEditor } from "@/components/profile/CustomFieldsEditor";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Panel } from "@/components/ui/Panel";
 import { PROFILE_FIELD_GROUPS, PROFILE_FIELD_LABELS } from "@/shared/profile-fields";
-import type { ProfileData, ProfileFieldKey } from "@/types/profile";
+import type { CustomField, Profile, ProfileData, ProfileFieldKey } from "@/types/profile";
 
 export interface ProfileEditorProps {
+  profileId: string;
   draft: ProfileData;
+  customFields: CustomField[];
+  allProfiles: Profile[];
   onChange: (draft: ProfileData) => void;
+  onCustomFieldsChange: (fields: CustomField[]) => void;
+  onTransferComplete?: () => void;
   onSave: () => void;
   onDelete?: () => void;
   canDelete?: boolean;
@@ -14,13 +20,25 @@ export interface ProfileEditorProps {
 }
 
 export function ProfileEditor({
+  profileId,
   draft,
+  customFields,
+  allProfiles,
   onChange,
+  onCustomFieldsChange,
+  onTransferComplete,
   onSave,
   onDelete,
   canDelete = false,
   statusMessage,
 }: ProfileEditorProps) {
+  const profileForCustom: Profile = {
+    id: profileId,
+    data: draft,
+    customFields,
+    createdAt: 0,
+    updatedAt: 0,
+  };
   function updateField(key: ProfileFieldKey | "label", value: string) {
     onChange({ ...draft, [key]: value });
   }
@@ -50,6 +68,13 @@ export function ProfileEditor({
           </div>
         </div>
       ))}
+
+      <CustomFieldsEditor
+        profile={profileForCustom}
+        profiles={allProfiles}
+        onChange={onCustomFieldsChange}
+        onTransferComplete={onTransferComplete}
+      />
 
       <div className="mt-8 flex flex-wrap items-center gap-3">
         <Button onClick={onSave}>Save changes</Button>
