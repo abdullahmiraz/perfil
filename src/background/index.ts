@@ -1,11 +1,23 @@
-import { isRestrictedUrl, sendTabMessage } from "@/lib/tab-bridge";
+import { initContextMenu } from "@/background/context-menu";
+import { getFillContext, safeNotifyFillContextChanged } from "@/background/fill-context";
+import {
+  clearTabFormDraft,
+  getTabFormDraftStatus,
+  restoreTabFormDraft,
+  saveTabFormDraft,
+  setTabSiteDraftPrefs,
+} from "@/background/form-draft-tab";
+import { fillActiveTab, scanActiveTab } from "@/background/fill-tab";
 import { vaultService } from "@/lib/vault-service";
 import type { MessageRequest, MessageResponse, MessageType } from "@/types/messages";
-import type { FillResult } from "@/types/fill";
+
+initContextMenu();
 
 chrome.runtime.onMessage.addListener((request: MessageRequest, _sender, sendResponse) => {
   void handleMessage(request)
-    .then(sendResponse)
+    .then(async (res) => {
+      sendResponse(res);
+    })
     .catch((err: unknown) => {
       console.error("[perfil]", err);
       sendResponse(fallbackError(request.type, err));
@@ -20,6 +32,14 @@ function fallbackError(type: MessageType, err: unknown): MessageResponse<Message
       return { status: "uninitialized", profileCount: 0 };
     case "GET_SETTINGS":
       return { settings: vaultService.getSettings() };
+    case "GET_FILL_CONTEXT":
+      return {
+        unlocked: false,
+        fieldPickerEnabled: true,
+        contextMenuEnabled: false,
+        profile: null,
+        profileLabel: "",
+      };
     case "UNLOCK":
     case "UNLOCK_PIN":
     case "SETUP":
@@ -44,6 +64,16 @@ function fallbackError(type: MessageType, err: unknown): MessageResponse<Message
       return { fields: 0, error: msg };
     case "FILL_ACTIVE_TAB":
       return { error: msg };
+    case "GET_TAB_FORM_DRAFT_STATUS":
+      return { error: msg };
+    case "SET_TAB_SITE_DRAFT_PREFS":
+      return { error: msg };
+    case "SAVE_TAB_FORM_DRAFT":
+      return { error: msg };
+    case "RESTORE_TAB_FORM_DRAFT":
+      return { error: msg };
+    case "CLEAR_TAB_FORM_DRAFT":
+      return { error: msg };
     default:
       return { ok: false } as MessageResponse<MessageType>;
   }
@@ -60,40 +90,71 @@ async function handleMessage(
   switch (request.type) {
     case "GET_STATUS":
       return vaultService.getStatus();
-    case "UNLOCK":
-      return vaultService.unlock(request.password);
-    case "UNLOCK_PIN":
-      return vaultService.unlockWithPin(request.pin);
+    case "GET_FILL_CONTEXT":
+      return getFillContext();
+    case "UNLOCK": {
+      const res = await vaultService.unlock(request.password);
+      if (res.ok) await safeNotifyFillContextChanged();
+      return res;
+    }
+    case "UNLOCK_PIN": {
+      const res = await vaultService.unlockWithPin(request.pin);
+      if (res.ok) await safeNotifyFillContextChanged();
+      return res;
+    }
     case "LOCK":
       await vaultService.lock();
+      await safeNotifyFillContextChanged();
       return { ok: true };
-    case "SETUP":
-      return vaultService.setup(request.password);
+    case "SETUP": {
+      const res = await vaultService.setup(request.password);
+      if (res.ok) await safeNotifyFillContextChanged();
+      return res;
+    }
     case "GET_PROFILES":
       return { profiles: vaultService.getProfiles() };
     case "GET_SETTINGS":
       return { settings: vaultService.getSettings() };
-    case "SAVE_SETTINGS":
-      return { settings: await vaultService.saveSettings(request.settings) };
-    case "SET_PIN":
-      return vaultService.setPin(request.pin, request.masterPassword);
-    case "CLEAR_PIN":
-      return vaultService.clearPin(request.masterPassword);
-    case "SAVE_PROFILE":
-      return { profile: vaultService.saveProfile(request.profile) };
-    case "DELETE_PROFILE":
-      return { ok: vaultService.deleteProfile(request.profileId) };
-    case "COPY_CUSTOM_FIELDS":
-      return vaultService.copyCustomFields(
+    case "SAVE_SETTINGS": {
+      const settings = await vaultService.saveSettings(request.settings);
+      await safeNotifyFillContextChanged();
+      return { settings };
+    }
+    case "SET_PIN": {
+      const res = await vaultService.setPin(request.pin, request.masterPassword);
+      return res;
+    }
+    case "CLEAR_PIN": {
+      const res = await vaultService.clearPin(request.masterPassword);
+      return res;
+    }
+    case "SAVE_PROFILE": {
+      const profile = await vaultService.saveProfile(request.profile);
+      await safeNotifyFillContextChanged();
+      return { profile };
+    }
+    case "DELETE_PROFILE": {
+      const ok = vaultService.deleteProfile(request.profileId);
+      if (ok) await safeNotifyFillContextChanged();
+      return { ok };
+    }
+    case "COPY_CUSTOM_FIELDS": {
+      const res = vaultService.copyCustomFields(
         request.sourceProfileId,
         request.targetProfileId,
         request.fieldIds,
         request.mode,
       );
+      if (res.ok) await safeNotifyFillContextChanged();
+      return res;
+    }
     case "EXPORT_VAULT":
       return { json: JSON.stringify(vaultService.exportBundle(), null, 2) };
-    case "IMPORT_VAULT":
-      return vaultService.importBundle(request.json, request.mode);
+    case "IMPORT_VAULT": {
+      const res = await vaultService.importBundle(request.json, request.mode);
+      if (res.ok) await safeNotifyFillContextChanged();
+      return res;
+    }
     case "TOUCH_ACTIVITY":
       vaultService.touchActivity();
       return { ok: true };
@@ -101,59 +162,20 @@ async function handleMessage(
       return scanActiveTab();
     case "FILL_ACTIVE_TAB":
       return fillActiveTab(request.profileId, request.minConfidence);
+    case "GET_TAB_FORM_DRAFT_STATUS":
+      return getTabFormDraftStatus();
+    case "SET_TAB_SITE_DRAFT_PREFS":
+      return setTabSiteDraftPrefs(request.prefs);
+    case "SAVE_TAB_FORM_DRAFT":
+      return saveTabFormDraft();
+    case "RESTORE_TAB_FORM_DRAFT":
+      return restoreTabFormDraft();
+    case "CLEAR_TAB_FORM_DRAFT":
+      return clearTabFormDraft();
     default:
       throw new Error("Unknown message type");
   }
 }
 
-async function getActiveTab(): Promise<chrome.tabs.Tab> {
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.id) throw new Error("No active tab");
-  return tab;
-}
-
-async function scanActiveTab(): Promise<MessageResponse<"SCAN_ACTIVE_TAB">> {
-  if (!vaultService.isUnlocked()) {
-    return { fields: 0, error: "Vault is locked" };
-  }
-  const tab = await getActiveTab();
-  if (isRestrictedUrl(tab.url)) {
-    return { fields: 0, error: "Cannot scan this page (browser internal page)" };
-  }
-  const profile = vaultService.resolveProfile();
-  if (!profile) return { fields: 0, error: "No profile available" };
-  try {
-    const response = await sendTabMessage<{ fieldCount: number }>(tab.id!, {
-      type: "SCAN_FIELDS",
-      profile,
-    });
-    return { fields: response?.fieldCount ?? 0 };
-  } catch {
-    return { fields: 0, error: "Could not scan this page. Try refreshing the tab." };
-  }
-}
-
-async function fillActiveTab(
-  profileId?: string,
-  minConfidence?: number,
-): Promise<MessageResponse<"FILL_ACTIVE_TAB">> {
-  if (!vaultService.isUnlocked()) {
-    return { error: "Vault is locked" };
-  }
-  const tab = await getActiveTab();
-  if (isRestrictedUrl(tab.url)) {
-    return { error: "Cannot fill this page (browser internal page)" };
-  }
-  const profile = vaultService.resolveProfile(profileId);
-  if (!profile) return { error: "No profile selected" };
-  try {
-    const result = await sendTabMessage<FillResult>(tab.id!, {
-      type: "FILL_FIELDS",
-      profile,
-      minConfidence: minConfidence ?? 0.55,
-    });
-    return { result };
-  } catch {
-    return { error: "Could not fill this page. Try refreshing the tab." };
-  }
-}
+// Rebuild menus once vault finishes loading (session restore)
+void vaultService.whenReady().then(() => safeNotifyFillContextChanged());

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { toErrorMessage } from "@/shared/errors";
+import { sanitizeUserError, toErrorMessage } from "@/shared/errors";
 import { getVaultStatus, sendMessage } from "@/shared/messages";
 import type { VaultStatus } from "@/types/vault";
 
@@ -46,7 +46,7 @@ export function useVault(): UseVaultResult {
       try {
         const res = await sendMessage({ type: "SETUP", password });
         if (!res.ok) {
-          setError(res.error ?? "Setup failed");
+          setError(sanitizeUserError(res.error ?? "Setup failed"));
           return false;
         }
         await refresh();
@@ -68,7 +68,7 @@ export function useVault(): UseVaultResult {
       try {
         const res = await sendMessage({ type: "UNLOCK", password });
         if (!res.ok) {
-          setError(res.error ?? "Unlock failed");
+          setError(sanitizeUserError(res.error ?? "Unlock failed"));
           return false;
         }
         await refresh();

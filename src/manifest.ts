@@ -20,8 +20,13 @@ export default defineManifest({
     service_worker: "src/background/index.ts",
     type: "module",
   },
-  permissions: ["storage", "activeTab", "scripting"],
-  host_permissions: ["<all_urls>"],
+  permissions: ["storage", "activeTab", "scripting", "contextMenus"],
+  host_permissions: [
+    "<all_urls>",
+    // Required for CRXJS dev service worker (Vite on :5173). Safe no-op when not using `npm run dev`.
+    "http://127.0.0.1:5173/*",
+    "http://localhost:5173/*",
+  ],
   content_scripts: [
     {
       matches: ["<all_urls>"],

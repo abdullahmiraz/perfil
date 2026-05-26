@@ -10,11 +10,22 @@ export default defineConfig({
     alias: { "@": path.resolve(__dirname, "src") },
   },
   server: {
+    host: "127.0.0.1",
     port: 5173,
     strictPort: true,
-    hmr: { port: 5173 },
+    hmr: {
+      host: "127.0.0.1",
+      port: 5173,
+    },
+    cors: {
+      origin: [/chrome-extension:\/\//],
+    },
+  },
+  legacy: {
+    skipWebSocketTokenCheck: true,
   },
   build: {
-    sourcemap: process.env.NODE_ENV === "development",
+    sourcemap: false,
+    emptyOutDir: true,
   },
 });
