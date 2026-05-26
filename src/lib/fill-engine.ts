@@ -3,7 +3,7 @@ import { matchProfileField } from "@/lib/profile-match";
 import type { FillResult } from "@/types/fill";
 import type { Profile, ProfileFieldKey } from "@/types/profile";
 
-function setNativeValue(
+export function setNativeValue(
   el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
   value: string,
 ): void {
@@ -24,7 +24,7 @@ function setNativeValue(
   el.dispatchEvent(new Event("blur", { bubbles: true }));
 }
 
-function flash(el: HTMLElement): void {
+export function flashField(el: HTMLElement): void {
   const prev = el.style.outline;
   el.style.outline = "2px solid #3d9cf5";
   el.style.outlineOffset = "2px";
@@ -56,7 +56,7 @@ export function fillPage(
       continue;
     }
     setNativeValue(el, match.value);
-    flash(el);
+    flashField(el);
     filled++;
     if (!String(match.source).startsWith("custom:")) {
       matches.push({
@@ -84,4 +84,12 @@ export function scanPage(profile: Profile, root: ParentNode = document) {
     .filter((m): m is NonNullable<typeof m> => m !== null);
 
   return { fieldCount: fields.length, matches };
+}
+
+export function fillElementValue(
+  el: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+  value: string,
+): void {
+  setNativeValue(el, value);
+  flashField(el);
 }

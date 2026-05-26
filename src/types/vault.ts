@@ -12,6 +12,10 @@ export interface VaultSettings {
   pinVerifier: string | null;
   /** When true, session token is cleared on browser restart (recommended) */
   requireMasterPasswordOnRestart: boolean;
+  /** Show picker when focusing a form field (content script) */
+  fieldPickerEnabled: boolean;
+  /** Show Perfil items in the page right-click menu */
+  contextMenuEnabled: boolean;
 }
 
 export interface VaultPayload {

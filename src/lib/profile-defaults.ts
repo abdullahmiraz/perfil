@@ -51,5 +51,8 @@ export function defaultVaultSettings(): VaultSettings {
     pinEnabled: false,
     pinVerifier: null,
     requireMasterPasswordOnRestart: true,
+    fieldPickerEnabled: true,
+    /** Off by default — enable via popup toggle (avoids clutter on search boxes). */
+    contextMenuEnabled: false,
   };
 }

@@ -15,7 +15,9 @@ function labelFor(el: HTMLElement, root: ParentNode): string {
   return "";
 }
 
-function isFillable(el: Element): el is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement {
+export function isFillableElement(
+  el: Element,
+): el is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement {
   if (el instanceof HTMLTextAreaElement) return !el.disabled && !el.readOnly;
   if (el instanceof HTMLSelectElement) return !el.disabled;
   if (!(el instanceof HTMLInputElement)) return false;
@@ -29,7 +31,7 @@ export function detectFields(root: ParentNode = document): SerializableField[] {
   const fields: SerializableField[] = [];
 
   nodes.forEach((node, index) => {
-    if (!isFillable(node)) return;
+    if (!isFillableElement(node)) return;
     const label = labelFor(node, root);
     const hints = [
       node.getAttribute("name"),
@@ -66,7 +68,7 @@ export function getFieldElement(
   const nodes = root.querySelectorAll("input, textarea, select");
   let fillableIndex = 0;
   for (const node of nodes) {
-    if (!isFillable(node)) continue;
+    if (!isFillableElement(node)) continue;
     if (fillableIndex === index) return node;
     fillableIndex++;
   }

@@ -1,4 +1,6 @@
 import type { FillResult } from "@/types/fill";
+import type { FillContext } from "@/types/fill-context";
+import type { FormDraftStatus, SiteDraftPrefs } from "@/types/form-draft";
 import type { Profile } from "@/types/profile";
 import type { VaultSettings, VaultStatus } from "@/types/vault";
 
@@ -21,6 +23,12 @@ export interface MessageResponses {
   TOUCH_ACTIVITY: { ok: boolean };
   FILL_ACTIVE_TAB: { result?: FillResult; error?: string };
   SCAN_ACTIVE_TAB: { fields: number; error?: string };
+  GET_FILL_CONTEXT: FillContext;
+  GET_TAB_FORM_DRAFT_STATUS: FormDraftStatus | { error: string };
+  SET_TAB_SITE_DRAFT_PREFS: SiteDraftPrefs | { error: string };
+  SAVE_TAB_FORM_DRAFT: { ok: true; fieldCount: number } | { error: string };
+  RESTORE_TAB_FORM_DRAFT: { ok: true; restored: number } | { error: string };
+  CLEAR_TAB_FORM_DRAFT: { ok: true } | { error: string };
 }
 
 export type MessageType = keyof MessageResponses;
@@ -51,4 +59,10 @@ export type MessageRequest =
   | { type: "IMPORT_VAULT"; json: string; mode: "merge" | "replace" }
   | { type: "TOUCH_ACTIVITY" }
   | { type: "FILL_ACTIVE_TAB"; profileId?: string; minConfidence?: number }
-  | { type: "SCAN_ACTIVE_TAB" };
+  | { type: "SCAN_ACTIVE_TAB" }
+  | { type: "GET_FILL_CONTEXT" }
+  | { type: "GET_TAB_FORM_DRAFT_STATUS" }
+  | { type: "SET_TAB_SITE_DRAFT_PREFS"; prefs: Partial<SiteDraftPrefs> }
+  | { type: "SAVE_TAB_FORM_DRAFT" }
+  | { type: "RESTORE_TAB_FORM_DRAFT" }
+  | { type: "CLEAR_TAB_FORM_DRAFT" };
