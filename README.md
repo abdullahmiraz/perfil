@@ -50,10 +50,30 @@ npm run dev
 
 ### Load in Chrome
 
+**Option A — Development (hot reload)**  
+Keep `npm run dev` running in a terminal, then:
+
 1. Open `chrome://extensions`
 2. Enable **Developer mode**
-3. Click **Load unpacked**
-4. Select the `dist` folder created by `npm run dev`
+3. **Load unpacked** → select the `dist` folder
+4. After code changes, click **Reload** on the extension card (or save a file — Vite rebuilds)
+
+**Option B — Standalone build (no dev server)**  
+Stop `npm run dev`, then:
+
+```bash
+npm run build
+```
+
+Load the same `dist` folder. The service worker uses bundled files (not localhost).
+
+### Service worker error (status code 3)?
+
+Usually means Chrome could not load the background script:
+
+1. **Dev mode:** `npm run dev` must be running on port **5173** before you load/reload the extension.
+2. **Stale `dist/`:** Run `npm run build` (with dev stopped) OR restart `npm run dev` and reload the extension.
+3. On `chrome://extensions`, click **Errors** under Perfil for the exact line.
 
 ### First use
 

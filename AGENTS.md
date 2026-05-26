@@ -38,6 +38,8 @@ Manual form page: `http://localhost:5173/test-form.html`
 
 ### Do
 
+- Put **sample / test data** in `fixtures/` (JSON profiles, HTML forms) — see `docs/DATA.md`
+- Load fixtures via `test/helpers/fixtures.ts` (tests) or `profileFromFixture()` (runtime)
 - Add UI via `src/components/` — reuse `Button`, `Input`, `Panel`, etc.
 - Put new types in `src/types/<domain>.ts`, re-export from `src/types/index.ts`
 - Put profile field labels/groups in `src/shared/profile-fields.ts` only
@@ -51,6 +53,7 @@ Manual form page: `http://localhost:5173/test-form.html`
 - Add network calls for profile data without explicit user opt-in
 - Put business logic in `App.tsx` files — use hooks + `src/lib/`
 - Duplicate field label maps or message types
+- Embed profile or form **values** as large constants in `.ts` / `.tsx`
 - Expand scope into Phase 2 (AES-GCM) unless the task explicitly requests it
 
 ## Message protocol
@@ -70,7 +73,7 @@ await sendMessage({ type: "FILL_ACTIVE_TAB", profileId?: string });
 2. **Typecheck** — catches message/type drift
 3. **Browser** — only for extension wiring/HMR verification
 
-Fixture form: `test/fixtures/contact-form.html` (mirrored in `public/test-form.html`)
+Fixtures: `fixtures/profiles/*.json`, `fixtures/forms/*.html` — run `npm run sync:fixtures` for `public/test-form.html`
 
 Programmatic API (no extension): `src/lib/fill-api.ts` — `scanForm()`, `fillForm()`, `readFormValues()`
 
