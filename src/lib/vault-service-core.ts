@@ -2,7 +2,14 @@ import { duplicateCustomField, sortCustomFields } from "@/lib/custom-field";
 import { migratePayload, migrateProfile } from "@/lib/profile-migrate";
 import { createDefaultPersonalProfile } from "@/lib/default-personal-profile";
 import { defaultVaultPayload, defaultVaultSettings } from "@/lib/profile-defaults";
-import { clearSession, loadSession, saveSession } from "@/lib/session-storage";
+import {
+  clearRecoveryVerified,
+  clearSession,
+  isRecoveryVerified,
+  loadSession,
+  markRecoveryVerified,
+  saveSession,
+} from "@/lib/session-storage";
 import { loadEncryptedVault, saveEncryptedVault, vaultExists } from "@/lib/storage";
 import type { Profile } from "@/types/profile";
 import {
@@ -182,27 +189,41 @@ export class VaultService {
     return { ok: true };
   }
 
-  async resetMasterPassword(
-    answer: string,
-    newPassword: string,
-  ): Promise<{ ok: boolean; error?: string }> {
+  async verifyRecoveryAnswer(answer: string): Promise<{ ok: boolean; error?: string }> {
     await this.whenReady();
-    if (newPassword.length < 8) {
-      return { ok: false, error: "New password must be at least 8 characters" };
-    }
     const blob = await loadEncryptedVault();
     if (!blob) return { ok: false, error: "No vault found" };
     if (!blob.recovery?.answerVerifier) {
       return { ok: false, error: "Recovery was not set up" };
     }
     if (blob.recovery.answerVerifier !== recoveryAnswerVerifier(answer)) {
+      await clearRecoveryVerified();
       return { ok: false, error: "Incorrect recovery answer" };
     }
+    await markRecoveryVerified();
+    return { ok: true };
+  }
+
+  async resetMasterPassword(newPassword: string): Promise<{ ok: boolean; error?: string }> {
+    await this.whenReady();
+    if (newPassword.length < 8) {
+      return { ok: false, error: "New password must be at least 8 characters" };
+    }
+    if (!(await isRecoveryVerified())) {
+      return { ok: false, error: "Answer your recovery question first" };
+    }
+    const blob = await loadEncryptedVault();
+    if (!blob) return { ok: false, error: "No vault found" };
 
     const payload = migratePayload(this.decodePayload(blob.ciphertext));
     await this.persist(payload, newPassword, blob.recovery);
+    await clearRecoveryVerified();
     await this.unlockInMemory(payload, newPassword, "password");
     return { ok: true };
+  }
+
+  async cancelRecoveryReset(): Promise<void> {
+    await clearRecoveryVerified();
   }
 
   async updateRecovery(
@@ -309,6 +330,7 @@ export class VaultService {
     this.sessionToken = null;
     if (this.idleTimer) clearTimeout(this.idleTimer);
     await clearSession();
+    await clearRecoveryVerified();
     const exists = await vaultExists();
     this.status = exists ? "locked" : "uninitialized";
   }

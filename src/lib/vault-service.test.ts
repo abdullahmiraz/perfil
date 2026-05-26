@@ -70,10 +70,17 @@ describe("VaultService", () => {
     expect(setup.ok).toBe(true);
 
     await vault.lock();
-    const bad = await vault.resetMasterPassword("wrong", "new-password-99");
-    expect(bad.ok).toBe(false);
 
-    const reset = await vault.resetMasterPassword("springfield", "new-password-99");
+    const badVerify = await vault.verifyRecoveryAnswer("wrong");
+    expect(badVerify.ok).toBe(false);
+
+    const withoutVerify = await vault.resetMasterPassword("new-password-99");
+    expect(withoutVerify.ok).toBe(false);
+
+    const verify = await vault.verifyRecoveryAnswer("springfield");
+    expect(verify.ok).toBe(true);
+
+    const reset = await vault.resetMasterPassword("new-password-99");
     expect(reset.ok).toBe(true);
     expect(vault.isUnlocked()).toBe(true);
 

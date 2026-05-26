@@ -132,7 +132,6 @@ export function App() {
         {showRecovery && recoveryQuestion ? (
           <RecoveryResetForm
             question={recoveryQuestion}
-            busy={vault.busy}
             onSuccess={async () => {
               setShowRecovery(false);
               await vault.refresh();

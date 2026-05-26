@@ -11,7 +11,9 @@ export interface MessageResponses {
   LOCK: { ok: boolean };
   SETUP: { ok: boolean; error?: string };
   GET_RECOVERY_INFO: VaultRecoveryInfo;
+  VERIFY_RECOVERY_ANSWER: { ok: boolean; error?: string };
   RESET_MASTER_PASSWORD: { ok: boolean; error?: string };
+  CANCEL_RECOVERY_RESET: { ok: boolean };
   UPDATE_RECOVERY: { ok: boolean; error?: string };
   CLEAR_RECOVERY: { ok: boolean; error?: string };
   GET_PROFILES: { profiles: Profile[] };
@@ -45,7 +47,9 @@ export type MessageRequest =
   | { type: "UNLOCK_PIN"; pin: string }
   | { type: "SETUP"; password: string; options?: VaultSetupOptions }
   | { type: "GET_RECOVERY_INFO" }
-  | { type: "RESET_MASTER_PASSWORD"; answer: string; newPassword: string }
+  | { type: "VERIFY_RECOVERY_ANSWER"; answer: string }
+  | { type: "RESET_MASTER_PASSWORD"; newPassword: string }
+  | { type: "CANCEL_RECOVERY_RESET" }
   | {
       type: "UPDATE_RECOVERY";
       question: string;

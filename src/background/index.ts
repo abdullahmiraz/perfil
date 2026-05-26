@@ -34,6 +34,8 @@ function fallbackError(type: MessageType, err: unknown): MessageResponse<Message
       return { settings: defaultVaultSettings() };
     case "GET_RECOVERY_INFO":
       return { enabled: false, question: null };
+    case "CANCEL_RECOVERY_RESET":
+      return { ok: true };
     case "GET_FILL_CONTEXT":
       return {
         unlocked: false,
@@ -45,7 +47,9 @@ function fallbackError(type: MessageType, err: unknown): MessageResponse<Message
     case "UNLOCK":
     case "UNLOCK_PIN":
     case "SETUP":
+    case "VERIFY_RECOVERY_ANSWER":
     case "RESET_MASTER_PASSWORD":
+    case "CANCEL_RECOVERY_RESET":
     case "UPDATE_RECOVERY":
     case "CLEAR_RECOVERY":
     case "SET_PIN":
@@ -90,7 +94,9 @@ async function handleMessage(
     vaultService.isUnlocked() &&
     request.type !== "LOCK" &&
     request.type !== "SETUP" &&
-    request.type !== "RESET_MASTER_PASSWORD"
+    request.type !== "RESET_MASTER_PASSWORD" &&
+    request.type !== "VERIFY_RECOVERY_ANSWER" &&
+    request.type !== "CANCEL_RECOVERY_RESET"
   ) {
     vaultService.touchActivity();
   }
@@ -121,14 +127,16 @@ async function handleMessage(
     }
     case "GET_RECOVERY_INFO":
       return vaultService.getRecoveryInfo();
+    case "VERIFY_RECOVERY_ANSWER":
+      return vaultService.verifyRecoveryAnswer(request.answer);
     case "RESET_MASTER_PASSWORD": {
-      const res = await vaultService.resetMasterPassword(
-        request.answer,
-        request.newPassword,
-      );
+      const res = await vaultService.resetMasterPassword(request.newPassword);
       if (res.ok) await safeNotifyFillContextChanged();
       return res;
     }
+    case "CANCEL_RECOVERY_RESET":
+      await vaultService.cancelRecoveryReset();
+      return { ok: true };
     case "UPDATE_RECOVERY":
       return vaultService.updateRecovery(
         request.question,
