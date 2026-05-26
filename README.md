@@ -23,7 +23,8 @@ Perfil is **not** a password manager. It focuses on what password managers do po
 | Phase | Scope | Status |
 |-------|--------|--------|
 | **1** | Extension scaffold, profiles UI, rule-based fill | ✅ Done |
-| **2** | Custom fields, import/export, PIN, session unlock | ✅ Current |
+| **2** | Custom fields, import/export, PIN, session unlock | ✅ Done |
+| **2.2** | Compact popup, URL form saves, header toolbar | ✅ Current (v0.2.2) |
 | **3** | AES-GCM vault, PBKDF2 (real encryption) | Planned |
 | **4** | Radio/checkbox/select/date, per-site overrides | Planned |
 | **5** | Optional AI for low-confidence fields (BYOK) | Planned |
@@ -32,12 +33,23 @@ Perfil is **not** a password manager. It focuses on what password managers do po
 
 ---
 
-## Quick start
+## Download & install
+
+| Method | Who | Steps |
+|--------|-----|--------|
+| **GitHub Release** | End users | [Releases](https://github.com/abdullahmiraz/perfil/releases) → download `perfil-x.y.z.zip` → extract → [load unpacked](docs/RELEASE.md#install-from-a-zip) |
+| **From source** | Developers | Clone repo → `npm install` → `npm run package` → load `dist/` or use the zip in `releases/` |
+
+Full guide (Chrome, Edge, Brave, store publishing): **[docs/RELEASE.md](docs/RELEASE.md)**
+
+---
+
+## Quick start (development)
 
 ### Requirements
 
 - [Node.js](https://nodejs.org/) 20+
-- Google Chrome (Chromium 120+)
+- Google Chrome or Edge (Chromium 120+)
 
 ### Install & run
 
@@ -132,6 +144,7 @@ Optional manual form page (while `npm run dev` is running): open `http://localho
 
 ```bash
 npm run build      # Production build → dist/
+npm run package    # build + releases/perfil-<version>.zip
 npm run typecheck  # TypeScript check
 ```
 

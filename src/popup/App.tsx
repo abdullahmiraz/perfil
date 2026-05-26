@@ -5,6 +5,7 @@ import { Toast } from "@/components/ui/Toast";
 import { MasterPasswordForm } from "@/components/auth/MasterPasswordForm";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageShell } from "@/components/layout/PageShell";
+import { PopupHeaderActions } from "@/components/popup/PopupHeaderActions";
 import { SiteToolsPanel } from "@/components/popup/SiteToolsPanel";
 import { ProfilePicker } from "@/components/profile/ProfilePicker";
 import { useFillActions } from "@/hooks/useFillActions";
@@ -12,28 +13,6 @@ import { useFeedback } from "@/hooks/useFeedback";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useVault } from "@/hooks/useVault";
 import { sendMessage } from "@/shared/messages";
-
-function IconButton({
-  title,
-  onClick,
-  children,
-}: {
-  title: string;
-  onClick: () => void;
-  children: string;
-}) {
-  return (
-    <button
-      type="button"
-      title={title}
-      aria-label={title}
-      onClick={onClick}
-      className="flex h-8 w-8 items-center justify-center rounded-lg text-sm text-perfil-muted transition-colors hover:bg-perfil-surface hover:text-perfil-text"
-    >
-      {children}
-    </button>
-  );
-}
 
 export function App() {
   const vault = useVault();
@@ -59,21 +38,13 @@ export function App() {
     }
   }, [vault.status]);
 
-  const headerActions =
-    vault.status === "unlocked" ? (
-      <>
-        <IconButton title="Manage profiles" onClick={() => chrome.runtime.openOptionsPage()}>
-          ⚙
-        </IconButton>
-        <IconButton title="Lock vault" onClick={() => void handleLock()}>
-          🔒
-        </IconButton>
-      </>
-    ) : vault.status === "locked" ? (
-      <IconButton title="Settings" onClick={() => chrome.runtime.openOptionsPage()}>
-        ⚙
-      </IconButton>
-    ) : null;
+  const headerActions = (
+    <PopupHeaderActions
+      showSettings
+      showLock={vault.status === "unlocked"}
+      onLock={vault.status === "unlocked" ? () => void handleLock() : undefined}
+    />
+  );
 
   async function handleLock() {
     fill.clearMessages();

@@ -1,12 +1,47 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { CompactToggle } from "@/components/ui/CompactToggle";
+import { InfoTip } from "@/components/ui/InfoTip";
 import { Select } from "@/components/ui/Select";
 import { sendMessage } from "@/shared/messages";
 import type { FormDraftStatus } from "@/types/form-draft";
 
 export interface SiteToolsPanelProps {
   onFeedback: (message: string, variant?: "success" | "error") => void;
+}
+
+function ActionButton({
+  title,
+  onClick,
+  disabled,
+  children,
+  danger,
+  accent,
+}: {
+  title: string;
+  onClick: () => void;
+  disabled?: boolean;
+  children: string;
+  danger?: boolean;
+  accent?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      disabled={disabled}
+      onClick={onClick}
+      className={[
+        "flex-1 border-l border-perfil-border px-1 py-1.5 text-[11px] font-medium transition-colors first:border-l-0",
+        "disabled:opacity-40",
+        accent
+          ? "bg-perfil-accent/15 text-perfil-accent hover:bg-perfil-accent/25"
+          : "hover:bg-perfil-surface",
+        danger ? "text-perfil-danger" : !accent ? "text-perfil-text" : "",
+      ].join(" ")}
+    >
+      {children}
+    </button>
+  );
 }
 
 export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
@@ -66,14 +101,14 @@ export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
 
   async function restoreDraft() {
     if (!selectedSaveId) {
-      onFeedback("Pick a saved form first", "error");
+      onFeedback("Pick a snapshot first", "error");
       return;
     }
     setBusy(true);
     try {
       const res = await sendMessage({ type: "RESTORE_TAB_FORM_DRAFT", draftId: selectedSaveId });
       if ("error" in res) onFeedback(res.error, "error");
-      else onFeedback(`Filled ${res.restored} field${res.restored === 1 ? "" : "s"}`, "success");
+      else onFeedback(`Restored ${res.restored}`, "success");
     } finally {
       setBusy(false);
     }
@@ -85,7 +120,7 @@ export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
     try {
       const res = await sendMessage({ type: "CLEAR_TAB_FORM_DRAFT", draftId: selectedSaveId });
       if ("error" in res) onFeedback(res.error, "error");
-      else onFeedback("Removed", "success");
+      else onFeedback("Deleted", "success");
       await refresh();
     } finally {
       setBusy(false);
@@ -93,34 +128,35 @@ export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
   }
 
   const saved = status?.saved ?? [];
+  const hasSaves = saved.length > 0;
   const pathLabel = status?.pageUrl
     ? (() => {
         try {
           return new URL(status.pageUrl).pathname;
         } catch {
-          return "this page";
+          return "";
         }
       })()
     : "";
 
   return (
-    <div className="mt-3 space-y-2 border-t border-perfil-border pt-3">
+    <div className="mt-2 space-y-1.5 border-t border-perfil-border pt-2">
       <CompactToggle
         checked={contextMenuOn}
         onChange={(v) => void toggleContextMenu(v)}
         label="Right-click menu"
-        info="Shows on empty page area only — not in search boxes or inputs. Save/restore form from there too."
+        info="Page background only. Save or restore forms from the menu."
       />
 
-      <div className="rounded-lg border border-perfil-border/80 bg-perfil-bg/40 px-2 py-2">
-        <div className="mb-1.5 flex items-center justify-between gap-1">
-          <span className="text-xs font-medium text-perfil-text">Saved forms</span>
-          <span
-            className="truncate text-[10px] text-perfil-muted"
-            title={status?.pageUrl}
-          >
-            {pathLabel || "—"}
-          </span>
+      <div className="rounded-lg border border-perfil-border/80 bg-perfil-bg/40 px-2 py-1.5">
+        <div className="mb-1 flex items-center gap-1">
+          <span className="text-[11px] font-medium text-perfil-text">Saved forms</span>
+          <InfoTip text="Saves match this exact URL. Save the page, then restore after refresh." />
+          {pathLabel && (
+            <span className="ml-auto max-w-[42%] truncate text-[10px] text-perfil-muted" title={status?.pageUrl}>
+              {pathLabel}
+            </span>
+          )}
         </div>
 
         {pageError ? (
@@ -131,39 +167,37 @@ export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
               value={selectedSaveId}
               onChange={(e) => setSelectedSaveId(e.target.value)}
               options={
-                saved.length
+                hasSaves
                   ? saved.map((s) => ({ value: s.id, label: s.label }))
-                  : [{ value: "", label: "No saves for this URL" }]
+                  : [{ value: "", label: "None saved yet" }]
               }
-              className="!py-1.5 text-xs"
-              disabled={!saved.length}
+              className="!py-1 text-[11px]"
+              disabled={!hasSaves}
             />
-            <div className="mt-1.5 flex gap-1">
-              <Button
-                variant="secondary"
+            <div className="mt-1 flex w-full overflow-hidden rounded-md border border-perfil-border bg-perfil-bg/50">
+              <ActionButton
+                title="Save what's on the page now as a new snapshot"
                 disabled={busy}
+                accent
                 onClick={() => void saveDraft()}
-                className="btn-compact flex-1"
               >
-                Save
-              </Button>
-              <Button
-                variant="secondary"
+                Save current
+              </ActionButton>
+              <ActionButton
+                title="Fill the page from the selected snapshot"
                 disabled={busy || !selectedSaveId}
                 onClick={() => void restoreDraft()}
-                className="btn-compact flex-1"
               >
-                Fill
-              </Button>
-              <Button
-                variant="secondary"
+                Restore
+              </ActionButton>
+              <ActionButton
+                title="Delete the selected snapshot"
                 disabled={busy || !selectedSaveId}
                 onClick={() => void clearSelected()}
-                className="btn-compact !px-2"
-                title="Delete selected save"
+                danger
               >
-                ×
-              </Button>
+                Delete
+              </ActionButton>
             </div>
           </>
         )}

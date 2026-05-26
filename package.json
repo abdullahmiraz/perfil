@@ -1,6 +1,6 @@
 {
   "name": "perfil",
-  "version": "0.1.0",
+  "version": "0.2.2",
   "private": true,
   "description": "Personal automated input fillers — secure, local-first browser extension",
   "type": "module",
@@ -12,6 +12,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "node scripts/verify.mjs",
+    "package": "node scripts/package-extension.mjs",
     "dev:harness": "vite --open /dev-harness.html",
     "icons": "node scripts/generate-icons.mjs",
     "postinstall": "node scripts/generate-icons.mjs && node scripts/sync-fixtures.mjs",

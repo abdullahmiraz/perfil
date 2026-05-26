@@ -5,6 +5,7 @@ export { Label } from "@/components/ui/Label";
 export { Panel } from "@/components/ui/Panel";
 export { Select } from "@/components/ui/Select";
 export { AppHeader } from "@/components/layout/AppHeader";
+export { HeaderToolbar, HeaderToolbarButton, ThemeToolbarButton } from "@/components/layout/HeaderToolbar";
 export { PageShell } from "@/components/layout/PageShell";
 export { MasterPasswordForm } from "@/components/auth/MasterPasswordForm";
 export { ProfilePicker } from "@/components/profile/ProfilePicker";

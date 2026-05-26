@@ -23,8 +23,11 @@ npm run verify    # typecheck + test + build + write test-results/report
 npm test          # native tests — prefer this over manual browser checks
 npm run typecheck
 npm run build
+npm run package   # build + releases/perfil-<version>.zip
 npm run dev:harness  # live scan/fill UI at /dev-harness.html
 ```
+
+Release / sideload / store upload: **`docs/RELEASE.md`**
 
 Dev extension (load `dist/` **once**, then keep `npm run dev` running for HMR):
 
