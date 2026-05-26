@@ -48,7 +48,7 @@ export type MessageRequest =
   | { type: "SETUP"; password: string; options?: VaultSetupOptions }
   | { type: "GET_RECOVERY_INFO" }
   | { type: "VERIFY_RECOVERY_ANSWER"; answer: string }
-  | { type: "RESET_MASTER_PASSWORD"; newPassword: string }
+  | { type: "RESET_MASTER_PASSWORD"; answer: string; newPassword: string }
   | { type: "CANCEL_RECOVERY_RESET" }
   | {
       type: "UPDATE_RECOVERY";

@@ -21,6 +21,7 @@ Page DOM
 - **UI** must not import `vault-service-core` directly
 - **Content** must not import React or hooks
 - **lib/** is shared; safe for content + background + tests
+- **vault-crypto.ts** — AES-GCM seal/open; used only from `vault-service-core`
 
 ## Type layout
 

@@ -11,12 +11,25 @@ import {
   saveSession,
 } from "@/lib/session-storage";
 import { loadEncryptedVault, saveEncryptedVault, vaultExists } from "@/lib/storage";
+import {
+  isLegacyBlob,
+  openVaultWithPassword,
+  openVaultWithPin,
+  resetVaultPassword,
+  sealVault,
+  updateCiphertext,
+  withPinWrap,
+  withRecoveryWrap,
+  withoutPinWrap,
+  type SealedVault,
+} from "@/lib/vault-crypto";
 import type { Profile } from "@/types/profile";
 import {
   isRecoveryAnswerValid,
   recoveryAnswerVerifier,
 } from "@/lib/vault-recovery";
 import type {
+  EncryptedVaultBlob,
   VaultExportBundle,
   VaultPayload,
   VaultRecoveryInfo,
@@ -26,11 +39,13 @@ import type {
   VaultStatus,
 } from "@/types/vault";
 
-/** Phase 1 encoding; Phase 2 replaces with AES-GCM. */
+/** Vault: AES-256-GCM (v3) with legacy base64 migration on unlock. */
 export class VaultService {
   private status: VaultStatus = "uninitialized";
   private payload: VaultPayload | null = null;
   private sessionToken: string | null = null;
+  private dek: CryptoKey | null = null;
+  private vaultBlob: EncryptedVaultBlob | null = null;
   private lastActivityAt = Date.now();
   private idleTimer: ReturnType<typeof setTimeout> | null = null;
   readonly ready: Promise<void>;
@@ -62,6 +77,11 @@ export class VaultService {
     const blob = await loadEncryptedVault();
     if (!blob) return;
 
+    if (!isLegacyBlob(blob)) {
+      await clearSession();
+      return;
+    }
+
     const settings = this.peekSettings(blob);
     if (settings.requireMasterPasswordOnRestart && session.unlockMethod === "password") {
       const restarted = Date.now() - session.lastActivityAt > 60_000 * 60 * 8;
@@ -79,7 +99,7 @@ export class VaultService {
       }
     }
 
-    const payload = migratePayload(this.decodePayload(blob.ciphertext));
+    const payload = migratePayload(this.decodeLegacyPayload(blob.ciphertext));
     this.payload = payload;
     this.sessionToken = "session";
     this.status = "unlocked";
@@ -87,13 +107,29 @@ export class VaultService {
     this.resetIdleTimer();
   }
 
-  private peekSettings(blob: { ciphertext: string }): VaultSettings {
+  private peekSettings(blob: EncryptedVaultBlob): VaultSettings {
+    if (!isLegacyBlob(blob)) {
+      return {
+        ...defaultVaultSettings(),
+        pinEnabled: Boolean(blob.pinWrappedDek),
+      };
+    }
     try {
-      const payload = migratePayload(this.decodePayload(blob.ciphertext));
+      const payload = migratePayload(this.decodeLegacyPayload(blob.ciphertext));
       return payload.settings;
     } catch {
       return defaultVaultSettings();
     }
+  }
+
+  private async applySealed(
+    sealed: SealedVault,
+    token: string,
+    method: "password" | "pin",
+  ): Promise<void> {
+    this.dek = sealed.dek;
+    this.vaultBlob = sealed.blob;
+    await this.unlockInMemory(sealed.payload, token, method);
   }
 
   touchActivity(): void {
@@ -184,8 +220,12 @@ export class VaultService {
     };
     payload.settings.defaultProfileId = payload.profiles[0]?.id ?? null;
 
-    await this.persist(payload, password, recoveryMeta);
-    await this.unlockInMemory(payload, password, "password");
+    const sealed = await sealVault(payload, password, {
+      recoveryAnswer: options?.recovery?.answer ?? null,
+      existingRecovery: recoveryMeta,
+    });
+    await saveEncryptedVault(sealed.blob);
+    await this.applySealed(sealed, password, "password");
     return { ok: true };
   }
 
@@ -204,7 +244,10 @@ export class VaultService {
     return { ok: true };
   }
 
-  async resetMasterPassword(newPassword: string): Promise<{ ok: boolean; error?: string }> {
+  async resetMasterPassword(
+    answer: string,
+    newPassword: string,
+  ): Promise<{ ok: boolean; error?: string }> {
     await this.whenReady();
     if (newPassword.length < 8) {
       return { ok: false, error: "New password must be at least 8 characters" };
@@ -215,11 +258,16 @@ export class VaultService {
     const blob = await loadEncryptedVault();
     if (!blob) return { ok: false, error: "No vault found" };
 
-    const payload = migratePayload(this.decodePayload(blob.ciphertext));
-    await this.persist(payload, newPassword, blob.recovery);
-    await clearRecoveryVerified();
-    await this.unlockInMemory(payload, newPassword, "password");
-    return { ok: true };
+    try {
+      const sealed = await resetVaultPassword(blob, answer, newPassword, null);
+      await saveEncryptedVault(sealed.blob);
+      await clearRecoveryVerified();
+      await this.applySealed(sealed, newPassword, "password");
+      return { ok: true };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Reset failed";
+      return { ok: false, error: msg };
+    }
   }
 
   async cancelRecoveryReset(): Promise<void> {
@@ -241,14 +289,16 @@ export class VaultService {
     if (!isRecoveryAnswerValid(answer)) {
       return { ok: false, error: "Answer must be at least 3 characters" };
     }
+    if (!this.dek || !this.vaultBlob) {
+      return { ok: false, error: "Vault locked" };
+    }
     const recovery: VaultRecoveryMeta = {
       question: q,
       answerVerifier: recoveryAnswerVerifier(answer),
     };
-    await saveEncryptedVault({
-      ...blob,
-      recovery,
-    });
+    const updated = await withRecoveryWrap(this.vaultBlob, this.dek, answer, recovery);
+    await saveEncryptedVault(updated);
+    this.vaultBlob = updated;
     return { ok: true };
   }
 
@@ -267,33 +317,44 @@ export class VaultService {
     await this.whenReady();
     const blob = await loadEncryptedVault();
     if (!blob) return { ok: false, error: "No vault found. Create one first." };
-    if (blob.verifier !== this.verifier(password)) {
-      return { ok: false, error: "Incorrect master password" };
+    try {
+      const sealed = await openVaultWithPassword(blob, password);
+      if (isLegacyBlob(blob)) {
+        await saveEncryptedVault(sealed.blob);
+      }
+      await this.applySealed(sealed, password, "password");
+      return { ok: true };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unlock failed";
+      return {
+        ok: false,
+        error: msg.includes("master password") ? "Incorrect master password" : msg,
+      };
     }
-    const payload = migratePayload(this.decodePayload(blob.ciphertext));
-    await this.unlockInMemory(payload, password, "password");
-    return { ok: true };
   }
 
   async unlockWithPin(pin: string): Promise<{ ok: boolean; error?: string }> {
     await this.whenReady();
     const blob = await loadEncryptedVault();
     if (!blob) return { ok: false, error: "No vault found" };
-    const payload = migratePayload(this.decodePayload(blob.ciphertext));
-    if (!payload.settings.pinEnabled || !payload.settings.pinVerifier) {
+    if (!blob.pinWrappedDek) {
       return { ok: false, error: "PIN is not enabled" };
     }
-    if (payload.settings.pinVerifier !== this.pinVerifier(pin)) {
-      return { ok: false, error: "Incorrect PIN" };
+    try {
+      const sealed = await openVaultWithPin(blob, pin);
+      await this.applySealed(sealed, "pin-session", "pin");
+      return { ok: true };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unlock failed";
+      return { ok: false, error: msg.includes("PIN") ? msg : "Incorrect PIN" };
     }
-    await this.unlockInMemory(payload, "pin-session", "pin");
-    return { ok: true };
   }
 
   async setPin(pin: string, masterPassword: string): Promise<{ ok: boolean; error?: string }> {
-    if (!this.payload) return { ok: false, error: "Vault locked" };
-    const blob = await loadEncryptedVault();
-    if (!blob || blob.verifier !== this.verifier(masterPassword)) {
+    if (!this.payload || !this.dek || !this.vaultBlob) {
+      return { ok: false, error: "Vault locked" };
+    }
+    if (this.vaultBlob.verifier !== this.verifier(masterPassword)) {
       return { ok: false, error: "Master password required to set PIN" };
     }
     if (!/^\d{4,8}$/.test(pin)) {
@@ -301,18 +362,25 @@ export class VaultService {
     }
     this.payload.settings.pinEnabled = true;
     this.payload.settings.pinVerifier = this.pinVerifier(pin);
+    const updated = await withPinWrap(this.vaultBlob, this.dek, pin);
+    await saveEncryptedVault(updated);
+    this.vaultBlob = updated;
     await this.persistCurrent();
     return { ok: true };
   }
 
   async clearPin(masterPassword: string): Promise<{ ok: boolean; error?: string }> {
-    if (!this.payload) return { ok: false, error: "Vault locked" };
-    const blob = await loadEncryptedVault();
-    if (!blob || blob.verifier !== this.verifier(masterPassword)) {
+    if (!this.payload || !this.vaultBlob) {
+      return { ok: false, error: "Vault locked" };
+    }
+    if (this.vaultBlob.verifier !== this.verifier(masterPassword)) {
       return { ok: false, error: "Master password required" };
     }
     this.payload.settings.pinEnabled = false;
     this.payload.settings.pinVerifier = null;
+    const updated = await withoutPinWrap(this.vaultBlob);
+    await saveEncryptedVault(updated);
+    this.vaultBlob = updated;
     await this.persistCurrent();
     return { ok: true };
   }
@@ -328,6 +396,8 @@ export class VaultService {
   async lock(): Promise<void> {
     this.payload = null;
     this.sessionToken = null;
+    this.dek = null;
+    this.vaultBlob = null;
     if (this.idleTimer) clearTimeout(this.idleTimer);
     await clearSession();
     await clearRecoveryVerified();
@@ -465,28 +535,11 @@ export class VaultService {
     this.resetIdleTimer();
   }
 
-  private async persist(
-    payload: VaultPayload,
-    password: string,
-    recovery?: VaultRecoveryMeta,
-  ): Promise<void> {
-    const existing = await loadEncryptedVault();
-    await saveEncryptedVault({
-      salt: btoa("perfil-phase1-salt"),
-      iv: btoa("perfil-phase1-iv"),
-      ciphertext: this.encodePayload(migratePayload(payload)),
-      verifier: this.verifier(password),
-      recovery: recovery ?? existing?.recovery,
-    });
-  }
-
   private async persistCurrent(): Promise<void> {
-    const blob = await loadEncryptedVault();
-    if (!blob || !this.payload || !this.sessionToken) return;
-    await saveEncryptedVault({
-      ...blob,
-      ciphertext: this.encodePayload(this.payload),
-    });
+    if (!this.payload || !this.dek || !this.vaultBlob || !this.sessionToken) return;
+    const updated = await updateCiphertext(this.payload, this.dek, this.vaultBlob);
+    await saveEncryptedVault(updated);
+    this.vaultBlob = updated;
   }
 
   private verifier(password: string): string {
@@ -497,11 +550,7 @@ export class VaultService {
     return btoa(`perfil-pin-v1:${pin}`);
   }
 
-  private encodePayload(payload: VaultPayload): string {
-    return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-  }
-
-  private decodePayload(ciphertext: string): unknown {
+  private decodeLegacyPayload(ciphertext: string): unknown {
     return JSON.parse(decodeURIComponent(escape(atob(ciphertext))));
   }
 }

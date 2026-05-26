@@ -31,9 +31,17 @@ export interface VaultRecoveryMeta {
 }
 
 export interface EncryptedVaultBlob {
+  /** `v3` = AES-256-GCM; omit + legacy salt = Phase 1 base64 */
+  encoding?: "v3";
   salt: string;
   iv: string;
   ciphertext: string;
+  /** Password-wrapped DEK (v3) */
+  wrappedDek?: string;
+  /** PIN-wrapped DEK when PIN enabled (v3) */
+  pinWrappedDek?: string | null;
+  /** Recovery-answer-wrapped DEK for forgot-password reset (v3) */
+  recoveryWrappedDek?: string | null;
   verifier: string;
   recovery?: VaultRecoveryMeta;
 }

@@ -11,7 +11,7 @@
 | Background | `src/background/` | Vault, messaging, tab bridge |
 | Content | `src/content/` | Scan/fill DOM (vanilla TS, no React) |
 | UI | `src/popup/`, `src/options/` | React — thin shells only |
-| Core logic | `src/lib/` | Matcher, fill engine, crypto (Phase 2) |
+| Core logic | `src/lib/` | Matcher, fill engine, `vault-crypto.ts` |
 | Shared UI | `src/components/` | Reusable React components |
 | Hooks | `src/hooks/` | `useVault`, `useProfiles`, `useFillActions` |
 | Types | `src/types/` | Split by domain — import from `@/types` |
@@ -57,7 +57,7 @@ Manual form page: `http://localhost:5173/test-form.html`
 - Put business logic in `App.tsx` files — use hooks + `src/lib/`
 - Duplicate field label maps or message types
 - Embed profile or form **values** as large constants in `.ts` / `.tsx`
-- Expand scope into Phase 2 (AES-GCM) unless the task explicitly requests it
+- Change vault crypto parameters without security review
 
 ## Message protocol
 
@@ -83,7 +83,7 @@ Programmatic API (no extension): `src/lib/fill-api.ts` — `scanForm()`, `fillFo
 ## Security notes
 
 - Vault in background only; content script receives profile only while unlocked
-- v0.1 vault is encoded + verifier (Phase 2 = AES-GCM) — see `docs/SECURITY.md`
+- v3 vault is AES-GCM; legacy base64 migrates on unlock — see `docs/SECURITY.md`
 - Permissions: `storage`, `activeTab`, `scripting`, `<all_urls>`
 
 ## File map (quick navigation)
@@ -100,11 +100,4 @@ src/components/           reusable UI
 
 ## Roadmap context
 
-| Phase | Focus |
-|-------|--------|
-| 1 ✅ | Scaffold, rules-based fill, React UI |
-| 2 | AES-GCM, auto-lock, encrypted export |
-| 3 | select/radio/checkbox/date, per-site overrides |
-| 4 | Optional BYOK AI for low-confidence fields |
-
-When implementing a phase, update this file’s phase table in the same PR.
+See **ROADMAP.md** and **docs/MARKET.md**. Next practical work: **P6 checkbox/radio fill**, then **P7 store listing**. Do not start AI/BYOK unless explicitly requested.

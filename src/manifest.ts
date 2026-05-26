@@ -3,7 +3,7 @@ import { defineManifest } from "@crxjs/vite-plugin";
 export default defineManifest({
   manifest_version: 3,
   name: "Perfil",
-  version: "0.2.3",
+  version: "0.3.0",
   description:
     "Fill web forms with your personal profiles — encrypted, local-only, no account required.",
   icons: {

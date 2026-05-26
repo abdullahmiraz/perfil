@@ -14,7 +14,7 @@ Perfil is **not** a password manager. It focuses on what password managers do po
 2. On any page with a form, click **Scan** or **Fill**.
 3. Perfil reads field labels, `name`, `id`, `placeholder`, and `autocomplete` attributes, matches them to your profile, and fills values — including React/Vue forms.
 
-**Core principles:** local-first · zero-knowledge vault (Phase 2: AES-256-GCM) · heuristic matching before AI · explicit user actions only.
+**Core principles:** local-first · AES-256-GCM vault · heuristic matching before AI · explicit user actions only.
 
 ---
 
@@ -22,14 +22,14 @@ Perfil is **not** a password manager. It focuses on what password managers do po
 
 | Phase | Scope | Status |
 |-------|--------|--------|
-| **1** | Extension scaffold, profiles UI, rule-based fill | ✅ Done |
-| **2** | Custom fields, import/export, PIN, session unlock | ✅ Done |
-| **2.2** | Compact popup, URL form saves, header toolbar | ✅ Current (v0.2.2) |
-| **3** | AES-GCM vault, PBKDF2 (real encryption) | Planned |
-| **4** | Radio/checkbox/select/date, per-site overrides | Planned |
-| **5** | Optional AI for low-confidence fields (BYOK) | Planned |
+| **1–2** | Profiles, custom fields, import/export, PIN, form memory | ✅ Done |
+| **3** | AES-256-GCM vault + recovery | ✅ **v0.3.0** |
+| **4** | Checkbox/radio/date fill coverage | 🔜 Next |
+| **5** | Chrome Web Store listing | Planned |
 
-> **v0.1.0 note:** The vault uses local storage with a password verifier. **Phase 2** replaces this with full AES-256-GCM encryption via the Web Crypto API. Do not store highly sensitive data (government IDs, payment cards) until Phase 2 ships.
+> **Security:** Vault data is encrypted with AES-256-GCM (PBKDF2). Still avoid payment cards and government IDs. Use a password manager for site logins. See [docs/SECURITY.md](docs/SECURITY.md).
+
+> Full checklist: **[ROADMAP.md](ROADMAP.md)** · Market position: **[docs/MARKET.md](docs/MARKET.md)**
 
 ---
 
@@ -198,14 +198,15 @@ Each profile field has regex patterns (e.g. `first-name`, `given-name` → `firs
 
 ---
 
-## Roadmap
+## Roadmap (summary)
 
-- [ ] Phase 2: AES-256-GCM + PBKDF2 vault encryption
-- [ ] Phase 2: Auto-lock, encrypted export/import
-- [ ] Phase 3: `select`, radio, checkbox, date inputs
-- [ ] Phase 3: Per-site field mapping overrides
-- [ ] Phase 4: Optional AI assist (BYOK) for ambiguous fields only
-- [ ] Firefox build (WXT or dual manifest)
+- [x] AES-256-GCM vault (v0.3.0)
+- [ ] Checkbox / radio / date fill (v0.3.1)
+- [ ] Chrome Web Store listing
+- [ ] Per-site overrides (if needed)
+- [ ] Firefox (later)
+
+See **[ROADMAP.md](ROADMAP.md)** for the full table.
 
 ---
 

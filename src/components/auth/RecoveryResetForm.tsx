@@ -53,7 +53,11 @@ export function RecoveryResetForm({ question, onSuccess, onCancel }: RecoveryRes
     }
     setBusy(true);
     try {
-      const res = await sendMessage({ type: "RESET_MASTER_PASSWORD", newPassword });
+      const res = await sendMessage({
+        type: "RESET_MASTER_PASSWORD",
+        answer,
+        newPassword,
+      });
       if (!res.ok) {
         setError(res.error ?? "Reset failed");
         if (res.error?.includes("recovery question first")) {

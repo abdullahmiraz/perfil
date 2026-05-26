@@ -34,8 +34,6 @@ function fallbackError(type: MessageType, err: unknown): MessageResponse<Message
       return { settings: defaultVaultSettings() };
     case "GET_RECOVERY_INFO":
       return { enabled: false, question: null };
-    case "CANCEL_RECOVERY_RESET":
-      return { ok: true };
     case "GET_FILL_CONTEXT":
       return {
         unlocked: false,
@@ -52,6 +50,8 @@ function fallbackError(type: MessageType, err: unknown): MessageResponse<Message
     case "CANCEL_RECOVERY_RESET":
     case "UPDATE_RECOVERY":
     case "CLEAR_RECOVERY":
+    case "CANCEL_RECOVERY_RESET":
+      return { ok: true };
     case "SET_PIN":
     case "CLEAR_PIN":
     case "COPY_CUSTOM_FIELDS":
@@ -130,7 +130,10 @@ async function handleMessage(
     case "VERIFY_RECOVERY_ANSWER":
       return vaultService.verifyRecoveryAnswer(request.answer);
     case "RESET_MASTER_PASSWORD": {
-      const res = await vaultService.resetMasterPassword(request.newPassword);
+      const res = await vaultService.resetMasterPassword(
+        request.answer,
+        request.newPassword,
+      );
       if (res.ok) await safeNotifyFillContextChanged();
       return res;
     }
