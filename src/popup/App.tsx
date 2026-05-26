@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Toast } from "@/components/ui/Toast";
 import { MasterPasswordForm } from "@/components/auth/MasterPasswordForm";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageShell } from "@/components/layout/PageShell";
+import { SiteToolsPanel } from "@/components/popup/SiteToolsPanel";
 import { ProfilePicker } from "@/components/profile/ProfilePicker";
 import { useFillActions } from "@/hooks/useFillActions";
+import { useFeedback } from "@/hooks/useFeedback";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useVault } from "@/hooks/useVault";
 import { sendMessage } from "@/shared/messages";
@@ -15,11 +18,13 @@ export function App() {
   const vault = useVault();
   const profiles = useProfiles(vault.status === "unlocked");
   const fill = useFillActions();
+  const feedback = useFeedback();
   const [selectedId, setSelectedId] = useState("");
   const [pinEnabled, setPinEnabled] = useState(false);
   const [pin, setPin] = useState("");
   const [usePin, setUsePin] = useState(false);
   const [pinError, setPinError] = useState<string | null>(null);
+  const [pinShakeKey, setPinShakeKey] = useState(0);
 
   useEffect(() => {
     if (profiles.activeId) setSelectedId(profiles.activeId);
@@ -37,6 +42,7 @@ export function App() {
     fill.clearMessages();
     await vault.lock();
     setSelectedId("");
+    feedback.showSuccess("Vault locked");
   }
 
   async function handlePinUnlock(e: React.FormEvent) {
@@ -46,14 +52,41 @@ export function App() {
     if (res.ok) {
       setPin("");
       await vault.refresh();
+      feedback.showSuccess("Unlocked with PIN");
     } else {
-      setPinError(res.error ?? "Incorrect PIN");
+      setPinError(
+        res.error?.includes("import()")
+          ? "Unlock failed. Reload the extension and try again."
+          : (res.error ?? "Incorrect PIN"),
+      );
+      setPinShakeKey((k) => k + 1);
     }
   }
+
+  async function handlePasswordUnlock(password: string) {
+    const ok = await vault.unlock(password);
+    if (ok) feedback.showSuccess("Vault unlocked");
+  }
+
+  async function handleSetup(password: string) {
+    const ok = await vault.setup(password);
+    if (ok) feedback.showSuccess("Vault created — Personal profile ready");
+  }
+
+  const toast = feedback.feedback ? (
+    <Toast
+      message={feedback.feedback.message}
+      variant={feedback.feedback.variant}
+      show
+      onDismiss={feedback.clear}
+      className="mb-3"
+    />
+  ) : null;
 
   if (vault.status === "uninitialized") {
     return (
       <PageShell>
+        {toast}
         <AppHeader compact />
         <p className="mt-3 text-sm leading-relaxed text-perfil-muted">
           Create a local encrypted vault. Your data stays on this device.
@@ -62,9 +95,7 @@ export function App() {
           mode="setup"
           busy={vault.busy}
           error={vault.error}
-          onSubmit={async (password) => {
-            await vault.setup(password);
-          }}
+          onSubmit={handleSetup}
         />
       </PageShell>
     );
@@ -73,6 +104,7 @@ export function App() {
   if (vault.status === "locked") {
     return (
       <PageShell>
+        {toast}
         <AppHeader compact />
         {pinEnabled && (
           <div className="mb-3 flex gap-2 text-xs">
@@ -96,16 +128,22 @@ export function App() {
         {usePin && pinEnabled ? (
           <form onSubmit={handlePinUnlock} className="space-y-3">
             <Input
+              key={`pin-${pinShakeKey}`}
               label="PIN"
               type="password"
               inputMode="numeric"
+              autoComplete="off"
               value={pin}
-              onChange={(e) => setPin(e.target.value)}
+              onChange={(e) => {
+                setPin(e.target.value);
+                if (pinError) setPinError(null);
+              }}
+              error={pinError}
+              shake={Boolean(pinError)}
               required
             />
-            {pinError && <Alert variant="error">{pinError}</Alert>}
             <Button type="submit" fullWidth disabled={vault.busy}>
-              Unlock with PIN
+              {vault.busy ? "Unlocking…" : "Unlock with PIN"}
             </Button>
           </form>
         ) : (
@@ -113,9 +151,7 @@ export function App() {
             mode="unlock"
             busy={vault.busy}
             error={vault.error}
-            onSubmit={async (password) => {
-              await vault.unlock(password);
-            }}
+            onSubmit={handlePasswordUnlock}
           />
         )}
       </PageShell>
@@ -124,6 +160,7 @@ export function App() {
 
   return (
     <PageShell>
+      {toast}
       <AppHeader compact />
       <p className="mt-1 text-xs text-perfil-muted">
         {vault.profileCount} profile{vault.profileCount === 1 ? "" : "s"} · unlocked
@@ -137,12 +174,14 @@ export function App() {
         />
       </div>
 
+      <SiteToolsPanel onFeedback={(msg, v) => (v === "error" ? feedback.showError(msg) : feedback.showSuccess(msg))} />
+
       <div className="mt-4 grid grid-cols-2 gap-2">
         <Button variant="secondary" fullWidth onClick={fill.scan} disabled={fill.busy}>
-          Scan page
+          {fill.busy ? "Scanning…" : "Scan page"}
         </Button>
         <Button fullWidth onClick={() => fill.fill(selectedId || undefined)} disabled={fill.busy}>
-          Fill page
+          {fill.busy ? "Filling…" : "Fill page"}
         </Button>
       </div>
 
