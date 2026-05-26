@@ -87,4 +87,8 @@
   .btn-secondary {
     @apply rounded-xl border border-perfil-border bg-perfil-surface py-2.5 text-sm font-medium text-perfil-text transition-colors hover:border-perfil-accent disabled:opacity-50;
   }
+
+  .btn-compact {
+    @apply rounded-lg px-2.5 py-1.5 text-xs font-medium;
+  }
 }

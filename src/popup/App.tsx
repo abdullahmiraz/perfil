@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Toast } from "@/components/ui/Toast";
@@ -13,6 +12,28 @@ import { useFeedback } from "@/hooks/useFeedback";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useVault } from "@/hooks/useVault";
 import { sendMessage } from "@/shared/messages";
+
+function IconButton({
+  title,
+  onClick,
+  children,
+}: {
+  title: string;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      onClick={onClick}
+      className="flex h-8 w-8 items-center justify-center rounded-lg text-sm text-perfil-muted transition-colors hover:bg-perfil-surface hover:text-perfil-text"
+    >
+      {children}
+    </button>
+  );
+}
 
 export function App() {
   const vault = useVault();
@@ -38,11 +59,27 @@ export function App() {
     }
   }, [vault.status]);
 
+  const headerActions =
+    vault.status === "unlocked" ? (
+      <>
+        <IconButton title="Manage profiles" onClick={() => chrome.runtime.openOptionsPage()}>
+          ⚙
+        </IconButton>
+        <IconButton title="Lock vault" onClick={() => void handleLock()}>
+          🔒
+        </IconButton>
+      </>
+    ) : vault.status === "locked" ? (
+      <IconButton title="Settings" onClick={() => chrome.runtime.openOptionsPage()}>
+        ⚙
+      </IconButton>
+    ) : null;
+
   async function handleLock() {
     fill.clearMessages();
     await vault.lock();
     setSelectedId("");
-    feedback.showSuccess("Vault locked");
+    feedback.showSuccess("Locked");
   }
 
   async function handlePinUnlock(e: React.FormEvent) {
@@ -52,11 +89,11 @@ export function App() {
     if (res.ok) {
       setPin("");
       await vault.refresh();
-      feedback.showSuccess("Unlocked with PIN");
+      feedback.showSuccess("Unlocked");
     } else {
       setPinError(
         res.error?.includes("import()")
-          ? "Unlock failed. Reload the extension and try again."
+          ? "Reload extension and try again"
           : (res.error ?? "Incorrect PIN"),
       );
       setPinShakeKey((k) => k + 1);
@@ -65,12 +102,12 @@ export function App() {
 
   async function handlePasswordUnlock(password: string) {
     const ok = await vault.unlock(password);
-    if (ok) feedback.showSuccess("Vault unlocked");
+    if (ok) feedback.showSuccess("Unlocked");
   }
 
   async function handleSetup(password: string) {
     const ok = await vault.setup(password);
-    if (ok) feedback.showSuccess("Vault created — Personal profile ready");
+    if (ok) feedback.showSuccess("Vault ready");
   }
 
   const toast = feedback.feedback ? (
@@ -79,7 +116,7 @@ export function App() {
       variant={feedback.feedback.variant}
       show
       onDismiss={feedback.clear}
-      className="mb-3"
+      className="mb-2"
     />
   ) : null;
 
@@ -87,10 +124,7 @@ export function App() {
     return (
       <PageShell>
         {toast}
-        <AppHeader compact />
-        <p className="mt-3 text-sm leading-relaxed text-perfil-muted">
-          Create a local encrypted vault. Your data stays on this device.
-        </p>
+        <AppHeader compact hideSubtitle actions={headerActions} />
         <MasterPasswordForm
           mode="setup"
           busy={vault.busy}
@@ -105,15 +139,15 @@ export function App() {
     return (
       <PageShell>
         {toast}
-        <AppHeader compact />
+        <AppHeader compact hideSubtitle actions={headerActions} />
         {pinEnabled && (
-          <div className="mb-3 flex gap-2 text-xs">
+          <div className="mb-2 flex gap-2 text-[11px]">
             <button
               type="button"
               className={!usePin ? "font-semibold text-perfil-accent" : "text-perfil-muted"}
               onClick={() => setUsePin(false)}
             >
-              Master password
+              Password
             </button>
             <span className="text-perfil-muted">·</span>
             <button
@@ -126,7 +160,7 @@ export function App() {
           </div>
         )}
         {usePin && pinEnabled ? (
-          <form onSubmit={handlePinUnlock} className="space-y-3">
+          <form onSubmit={handlePinUnlock} className="space-y-2">
             <Input
               key={`pin-${pinShakeKey}`}
               label="PIN"
@@ -142,8 +176,8 @@ export function App() {
               shake={Boolean(pinError)}
               required
             />
-            <Button type="submit" fullWidth disabled={vault.busy}>
-              {vault.busy ? "Unlocking…" : "Unlock with PIN"}
+            <Button type="submit" fullWidth disabled={vault.busy} className="btn-compact">
+              {vault.busy ? "…" : "Unlock"}
             </Button>
           </form>
         ) : (
@@ -161,53 +195,43 @@ export function App() {
   return (
     <PageShell>
       {toast}
-      <AppHeader compact />
-      <p className="mt-1 text-xs text-perfil-muted">
-        {vault.profileCount} profile{vault.profileCount === 1 ? "" : "s"} · unlocked
-      </p>
+      <AppHeader compact hideSubtitle actions={headerActions} />
 
-      <div className="mt-4">
-        <ProfilePicker
-          profiles={profiles.profiles}
-          value={selectedId}
-          onChange={setSelectedId}
-        />
-      </div>
-
-      <SiteToolsPanel onFeedback={(msg, v) => (v === "error" ? feedback.showError(msg) : feedback.showSuccess(msg))} />
-
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <Button variant="secondary" fullWidth onClick={fill.scan} disabled={fill.busy}>
-          {fill.busy ? "Scanning…" : "Scan page"}
-        </Button>
-        <Button fullWidth onClick={() => fill.fill(selectedId || undefined)} disabled={fill.busy}>
-          {fill.busy ? "Filling…" : "Fill page"}
-        </Button>
-      </div>
-
-      {fill.info && (
-        <Alert variant="success" className="mt-3">
-          {fill.info}
-        </Alert>
-      )}
-      {fill.error && (
-        <Alert variant="error" className="mt-2">
-          {fill.error}
-        </Alert>
-      )}
-
-      <div className="mt-4 flex items-center justify-between border-t border-perfil-border pt-3">
-        <button
-          type="button"
-          onClick={() => chrome.runtime.openOptionsPage()}
-          className="text-xs font-medium text-perfil-accent hover:underline"
+      <div className="mt-3 flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <ProfilePicker
+            profiles={profiles.profiles}
+            value={selectedId}
+            onChange={setSelectedId}
+            compact
+          />
+        </div>
+        <Button
+          variant="secondary"
+          onClick={fill.scan}
+          disabled={fill.busy}
+          className="btn-compact shrink-0"
         >
-          Manage profiles
-        </button>
-        <Button variant="danger" onClick={handleLock}>
-          Lock vault
+          Scan
+        </Button>
+        <Button
+          onClick={() => fill.fill(selectedId || undefined)}
+          disabled={fill.busy}
+          className="btn-compact shrink-0"
+        >
+          Fill
         </Button>
       </div>
+
+      {(fill.info || fill.error) && (
+        <p className={`mt-2 text-[11px] ${fill.error ? "text-perfil-danger" : "text-perfil-success"}`}>
+          {fill.error ?? fill.info}
+        </p>
+      )}
+
+      <SiteToolsPanel
+        onFeedback={(msg, v) => (v === "error" ? feedback.showError(msg) : feedback.showSuccess(msg))}
+      />
     </PageShell>
   );
 }

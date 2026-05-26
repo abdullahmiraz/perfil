@@ -6,7 +6,7 @@ export interface PageShellProps {
 }
 
 const WIDTH_CLASS = {
-  popup: "w-[360px] p-5",
+  popup: "w-[320px] p-4",
   options: "mx-auto max-w-3xl p-8 md:p-10",
 };
 

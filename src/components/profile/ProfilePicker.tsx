@@ -5,14 +5,16 @@ export interface ProfilePickerProps {
   profiles: Profile[];
   value: string;
   onChange: (profileId: string) => void;
+  compact?: boolean;
 }
 
-export function ProfilePicker({ profiles, value, onChange }: ProfilePickerProps) {
+export function ProfilePicker({ profiles, value, onChange, compact }: ProfilePickerProps) {
   return (
     <Select
-      label="Profile"
+      label={compact ? undefined : "Profile"}
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      className={compact ? "!py-1.5 text-xs min-w-0 max-w-full" : undefined}
       options={profiles.map((p) => ({
         value: p.id,
         label: p.data.label || "Unnamed",
