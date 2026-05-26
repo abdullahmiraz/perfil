@@ -1,0 +1,30 @@
+{
+  "label": "Personal",
+  "data": {
+    "firstName": "Alex",
+    "lastName": "Morgan",
+    "fullName": "Alex Morgan",
+    "email": "alex.morgan@example.com",
+    "phone": "+1 (555) 234-5678",
+    "company": "Example Co.",
+    "jobTitle": "Product Designer",
+    "website": "https://example.com",
+    "addressLine1": "123 Market Street",
+    "addressLine2": "Apt 4B",
+    "city": "San Francisco",
+    "state": "CA",
+    "postalCode": "94105",
+    "country": "United States",
+    "dateOfBirth": "1992-06-15",
+    "linkedIn": "https://linkedin.com/in/alexmorgan",
+    "github": "https://github.com/alexmorgan",
+    "bio": "Building thoughtful tools for everyday tasks."
+  },
+  "customFields": [
+    {
+      "label": "Preferred name",
+      "type": "text",
+      "value": "Alex"
+    }
+  ]
+}

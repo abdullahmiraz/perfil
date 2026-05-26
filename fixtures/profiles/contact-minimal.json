@@ -1,0 +1,9 @@
+{
+  "label": "Test",
+  "data": {
+    "firstName": "Ada",
+    "lastName": "Lovelace",
+    "email": "ada@example.com"
+  },
+  "customFields": []
+}

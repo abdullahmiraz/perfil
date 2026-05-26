@@ -8,3 +8,4 @@ export type {
   MessageResponses,
 } from "@/types/messages";
 export type { ContentMessage, ContentMessageResponse } from "@/types/content";
+export type { ProfileFixture, ProfileFixtureCustomField } from "@/types/fixtures";

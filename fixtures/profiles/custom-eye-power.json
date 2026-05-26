@@ -1,0 +1,11 @@
+{
+  "label": "Test",
+  "data": {},
+  "customFields": [
+    {
+      "label": "Eye power",
+      "type": "text",
+      "value": "-2.5"
+    }
+  ]
+}

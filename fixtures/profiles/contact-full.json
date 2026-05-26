@@ -1,0 +1,13 @@
+{
+  "label": "Personal",
+  "data": {
+    "firstName": "Ada",
+    "lastName": "Lovelace",
+    "email": "ada@example.com",
+    "phone": "555-0100",
+    "company": "Analytical Engines",
+    "city": "London",
+    "country": "UK"
+  },
+  "customFields": []
+}

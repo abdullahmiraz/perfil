@@ -1,0 +1,16 @@
+---
+description: Perfil — keep sample data in fixtures/, not in source files
+globs: src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Data placement
+
+Read `docs/DATA.md` and `fixtures/README.md`.
+
+- Sample profiles → `fixtures/profiles/*.json` + `loadProfileFixture()` / `profileFromFixture()`
+- HTML test forms → `fixtures/forms/*.html` + `mountFormFixture()`
+- Do **not** add `const DEMO_* = { ... }` blocks in React or lib files
+- UI copy & field **labels** (not values) → `src/shared/profile-fields.ts`
+
+When the user describes test data in chat, create or update a fixture file, then reference it by name in code.

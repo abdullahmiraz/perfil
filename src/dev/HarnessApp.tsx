@@ -1,42 +1,11 @@
-import { useMemo, useRef, useState } from "react";
-import { createProfile } from "@/lib/profile-defaults";
+import { useRef, useState } from "react";
 import { fillForm, readFormValues, scanForm, type FillReport, type ScanReport } from "@/lib/fill-api";
-import type { ProfileData } from "@/types/profile";
+import { harnessFormHtml, harnessProfile } from "@/lib/fixtures/harness";
 import "@/styles/globals.css";
-
-const DEMO_PROFILE: Partial<ProfileData> = {
-  label: "Demo",
-  firstName: "Ada",
-  lastName: "Lovelace",
-  email: "ada@example.com",
-  phone: "+1 555 0100",
-  company: "Analytical Engines",
-  city: "London",
-  country: "United Kingdom",
-};
-
-const FORM_HTML = `
-<form id="contact">
-  <label for="firstName">First name</label>
-  <input id="firstName" name="firstName" autocomplete="given-name" />
-  <label for="lastName">Last name</label>
-  <input id="lastName" name="lastName" autocomplete="family-name" />
-  <label for="email">Email address</label>
-  <input id="email" name="email" type="email" autocomplete="email" />
-  <label for="phone">Phone number</label>
-  <input id="phone" name="phone" type="tel" autocomplete="tel" />
-  <label for="company">Company</label>
-  <input id="company" name="company" autocomplete="organization" />
-  <label for="city">City</label>
-  <input id="city" name="city" autocomplete="address-level2" />
-  <label for="country">Country</label>
-  <input id="country" name="country" autocomplete="country" />
-</form>
-`;
 
 export function HarnessApp() {
   const formRef = useRef<HTMLDivElement>(null);
-  const profile = useMemo(() => createProfile("Demo", DEMO_PROFILE), []);
+  const profile = harnessProfile;
   const [scan, setScan] = useState<ScanReport | null>(null);
   const [fill, setFill] = useState<FillReport | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
@@ -61,7 +30,7 @@ export function HarnessApp() {
 
   function reset() {
     if (!formRef.current) return;
-    formRef.current.innerHTML = FORM_HTML;
+    formRef.current.innerHTML = harnessFormHtml;
     setScan(null);
     setFill(null);
     setValues({});
@@ -72,7 +41,7 @@ export function HarnessApp() {
       <header className="border-b border-perfil-border px-6 py-4">
         <h1 className="text-xl font-semibold tracking-tight">Perfil Dev Harness</h1>
         <p className="text-sm text-perfil-muted">
-          Live scan/fill API — same engine as the extension content script
+          Live scan/fill API — profile from <code className="text-perfil-accent">fixtures/profiles/demo.json</code>
         </p>
       </header>
 
@@ -93,7 +62,7 @@ export function HarnessApp() {
           <div
             ref={formRef}
             className="harness-form space-y-3"
-            dangerouslySetInnerHTML={{ __html: FORM_HTML }}
+            dangerouslySetInnerHTML={{ __html: harnessFormHtml }}
           />
 
           {Object.keys(values).length > 0 && (
