@@ -1,0 +1,13 @@
+---
+description: Perfil extension core conventions (lib, background, content)
+globs: src/{lib,background,content,types}/**/*
+alwaysApply: false
+---
+
+# Perfil core
+
+- Read `AGENTS.md` before structural changes.
+- Types live in `src/types/<domain>.ts`; re-export from `src/types/index.ts`.
+- After editing `src/lib/`, run `npm test`.
+- No React in content scripts. No secrets in content scripts.
+- Use `tab-bridge.sendTabMessage` for background → tab communication.

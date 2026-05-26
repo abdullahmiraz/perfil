@@ -1,0 +1,12 @@
+---
+description: Perfil React UI — components and hooks only
+globs: src/{components,hooks,popup,options}/**/*
+alwaysApply: false
+---
+
+# Perfil UI
+
+- Reuse `src/components/ui/*` — do not add raw `<button>`/`<input>` with duplicate classes.
+- Business logic in `src/hooks/`, not in `App.tsx`.
+- Profile field labels: `src/shared/profile-fields.ts` only.
+- Messages: `sendMessage` from `@/shared/messages`.

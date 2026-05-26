@@ -1,0 +1,54 @@
+@import "@fontsource-variable/inter";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    background: #0c1017;
+    color: #eef2f7;
+    font-family: "Inter Variable", "Inter", system-ui, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-variation-settings: "opsz" 32;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    letter-spacing: -0.011em;
+    line-height: 1.5;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    font: inherit;
+    letter-spacing: inherit;
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.025em;
+  }
+}
+
+@layer components {
+  .input-field {
+    @apply w-full rounded-xl border border-perfil-border bg-perfil-bg px-3 py-2.5 text-sm text-perfil-text outline-none transition-colors placeholder:text-perfil-muted/60 focus:border-perfil-accent focus:ring-2 focus:ring-perfil-accent/20;
+  }
+
+  .btn-primary {
+    @apply rounded-xl bg-perfil-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-perfil-accent/20 transition-colors hover:bg-perfil-accentHover disabled:opacity-50;
+  }
+
+  .btn-secondary {
+    @apply rounded-xl border border-perfil-border bg-perfil-surface py-2.5 text-sm font-medium text-perfil-text transition-colors hover:border-perfil-accent disabled:opacity-50;
+  }
+}
