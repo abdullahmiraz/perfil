@@ -5,6 +5,18 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --perfil-bg: #0c1017;
+    --perfil-surface: #151c28;
+    --perfil-border: #263044;
+    --perfil-text: #eef2f7;
+    --perfil-muted: #8b9cb3;
+    --perfil-accent: #4a9ff5;
+    --perfil-accent-hover: #6bb3ff;
+    --perfil-success: #34d399;
+    --perfil-danger: #f87171;
+  }
+
   * {
     box-sizing: border-box;
   }
@@ -12,8 +24,8 @@
   body {
     margin: 0;
     min-width: 320px;
-    background: #0c1017;
-    color: #eef2f7;
+    background: var(--perfil-bg);
+    color: var(--perfil-text);
     font-family: "Inter Variable", "Inter", system-ui, sans-serif;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     font-variation-settings: "opsz" 32;
@@ -41,11 +53,35 @@
 
 @layer components {
   .input-field {
-    @apply w-full rounded-xl border border-perfil-border bg-perfil-bg px-3 py-2.5 text-sm text-perfil-text outline-none transition-colors placeholder:text-perfil-muted/60 focus:border-perfil-accent focus:ring-2 focus:ring-perfil-accent/20;
+    @apply w-full rounded-xl border border-perfil-border bg-perfil-bg px-3 py-2.5 text-sm text-perfil-text outline-none transition-colors placeholder:text-perfil-muted placeholder:opacity-60 focus:border-perfil-accent focus:ring-2 focus:ring-perfil-accent focus:ring-opacity-20;
+  }
+
+  .input-field--error {
+    @apply border-perfil-danger focus:border-perfil-danger focus:ring-perfil-danger focus:ring-opacity-25;
+  }
+
+  @keyframes perfil-shake {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    20%,
+    60% {
+      transform: translateX(-4px);
+    }
+    40%,
+    80% {
+      transform: translateX(4px);
+    }
+  }
+
+  .perfil-shake {
+    animation: perfil-shake 0.45s ease-in-out;
   }
 
   .btn-primary {
-    @apply rounded-xl bg-perfil-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-perfil-accent/20 transition-colors hover:bg-perfil-accentHover disabled:opacity-50;
+    @apply rounded-xl bg-perfil-accent px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-perfil-accentHover disabled:opacity-50;
+    box-shadow: 0 1px 2px color-mix(in srgb, var(--perfil-accent) 25%, transparent);
   }
 
   .btn-secondary {

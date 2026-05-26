@@ -8,5 +8,6 @@ export { AppHeader } from "@/components/layout/AppHeader";
 export { PageShell } from "@/components/layout/PageShell";
 export { MasterPasswordForm } from "@/components/auth/MasterPasswordForm";
 export { ProfilePicker } from "@/components/profile/ProfilePicker";
-export { ProfileSidebar } from "@/components/profile/ProfileSidebar";
+export { ProfileTabs } from "@/components/profile/ProfileTabs";
+export { Toast } from "@/components/ui/Toast";
 export { ProfileEditor } from "@/components/profile/ProfileEditor";

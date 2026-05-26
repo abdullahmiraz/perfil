@@ -5,15 +5,15 @@ export default {
     extend: {
       colors: {
         perfil: {
-          bg: "#0c1017",
-          surface: "#151c28",
-          border: "#263044",
-          text: "#eef2f7",
-          muted: "#8b9cb3",
-          accent: "#4a9ff5",
-          accentHover: "#6bb3ff",
-          success: "#34d399",
-          danger: "#f87171",
+          bg: "var(--perfil-bg)",
+          surface: "var(--perfil-surface)",
+          border: "var(--perfil-border)",
+          text: "var(--perfil-text)",
+          muted: "var(--perfil-muted)",
+          accent: "var(--perfil-accent)",
+          accentHover: "var(--perfil-accent-hover)",
+          success: "var(--perfil-success)",
+          danger: "var(--perfil-danger)",
         },
       },
       fontFamily: {

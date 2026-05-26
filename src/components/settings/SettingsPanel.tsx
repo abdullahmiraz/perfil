@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
+import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Panel } from "@/components/ui/Panel";
 import { Select } from "@/components/ui/Select";
 import { sendMessage } from "@/shared/messages";
+import {
+  mapPinSettingsError,
+  validatePinForm,
+  type FieldErrorMap,
+} from "@/lib/form-errors";
 import type { AutoLockMinutes, VaultSettings } from "@/types/vault";
 
 const LOCK_OPTIONS: { value: string; label: string }[] = [
@@ -15,51 +21,90 @@ const LOCK_OPTIONS: { value: string; label: string }[] = [
   { value: "0", label: "Never (while browser is open)" },
 ];
 
-export function SettingsPanel() {
+export interface SettingsPanelProps {
+  onFeedback?: (message: string, variant: "success" | "error") => void;
+}
+
+export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
   const [settings, setSettings] = useState<VaultSettings | null>(null);
   const [pin, setPin] = useState("");
   const [masterPassword, setMasterPassword] = useState("");
   const [importMode, setImportMode] = useState<"merge" | "replace">("merge");
   const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<FieldErrorMap>({});
+  const [shakeKey, setShakeKey] = useState(0);
 
   useEffect(() => {
     void sendMessage({ type: "GET_SETTINGS" }).then((r) => setSettings(r.settings));
   }, []);
+
+  function bumpShake() {
+    setShakeKey((k) => k + 1);
+  }
+
+  function clearPinErrors() {
+    setFieldErrors({});
+    setFormError("");
+  }
 
   async function save(patch: Partial<VaultSettings>) {
     try {
       const res = await sendMessage({ type: "SAVE_SETTINGS", settings: patch });
       setSettings(res.settings);
       setMessage("Settings saved");
-      setError("");
+      onFeedback?.("Settings saved", "success");
+      setFormError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Save failed");
+      const msg = e instanceof Error ? e.message : "Save failed";
+      setFormError(msg);
+      onFeedback?.(msg, "error");
+      bumpShake();
     }
   }
 
   async function enablePin() {
+    clearPinErrors();
+    const clientErr = validatePinForm(pin, masterPassword);
+    if (Object.keys(clientErr).length > 0) {
+      setFieldErrors(clientErr);
+      bumpShake();
+      return;
+    }
     const res = await sendMessage({ type: "SET_PIN", pin, masterPassword });
     if (res.ok) {
-      setMessage("PIN enabled");
+      const msg = settings?.pinEnabled ? "PIN updated" : "PIN enabled";
+      setMessage(msg);
+      onFeedback?.(msg, "success");
       setPin("");
       setMasterPassword("");
       const s = await sendMessage({ type: "GET_SETTINGS" });
       setSettings(s.settings);
     } else {
-      setError(res.error ?? "Failed");
+      const err = res.error ?? "Failed to set PIN";
+      setFieldErrors(mapPinSettingsError(err));
+      onFeedback?.(err, "error");
+      bumpShake();
     }
   }
 
   async function disablePin() {
+    clearPinErrors();
+    if (!masterPassword.trim()) {
+      setFieldErrors({ masterPassword: "Enter your master password to disable PIN" });
+      bumpShake();
+      return;
+    }
     const res = await sendMessage({ type: "CLEAR_PIN", masterPassword });
     if (res.ok) {
       setMessage("PIN disabled");
+      onFeedback?.("PIN disabled", "success");
       setMasterPassword("");
       const s = await sendMessage({ type: "GET_SETTINGS" });
       setSettings(s.settings);
     } else {
-      setError(res.error ?? "Failed");
+      setFieldErrors(mapPinSettingsError(res.error ?? "Failed to disable PIN"));
+      bumpShake();
     }
   }
 
@@ -72,16 +117,23 @@ export function SettingsPanel() {
     a.download = `perfil-export-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    setMessage("Exported");
+      setMessage("Exported");
+      onFeedback?.("Vault exported", "success");
   }
 
   async function importJson(file: File) {
     const text = await file.text();
     const res = await sendMessage({ type: "IMPORT_VAULT", json: text, mode: importMode });
     if (res.ok) {
-      setMessage(`Imported ${res.count} profile(s)`);
+      const msg = `Imported ${res.count} profile(s)`;
+      setMessage(msg);
+      onFeedback?.(msg, "success");
+      setFormError("");
     } else {
-      setError(res.error ?? "Import failed");
+      const err = res.error ?? "Import failed";
+      setFormError(err);
+      onFeedback?.(err, "error");
+      bumpShake();
     }
   }
 
@@ -89,8 +141,12 @@ export function SettingsPanel() {
     return <p className="text-sm text-perfil-muted">Loading settings…</p>;
   }
 
+  const pinShake = shakeKey > 0;
+
   return (
     <div className="space-y-6">
+      <AppearanceSettings />
+
       <Panel>
         <h2 className="font-semibold tracking-tight">Security & unlock</h2>
         <p className="mt-1 text-xs leading-relaxed text-perfil-muted">
@@ -123,24 +179,40 @@ export function SettingsPanel() {
           {settings.pinEnabled ? (
             <p className="mt-1 text-xs text-perfil-success">PIN is enabled</p>
           ) : (
-            <p className="mt-1 text-xs text-perfil-muted">Use a short PIN instead of your full password</p>
+            <p className="mt-1 text-xs text-perfil-muted">
+              Use a short PIN instead of your full password when opening the popup
+            </p>
           )}
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div key={`pin-row-${shakeKey}`} className="mt-3 grid gap-3 sm:grid-cols-2">
             <Input
               label="PIN (4–8 digits)"
               type="password"
               inputMode="numeric"
+              autoComplete="off"
               value={pin}
-              onChange={(e) => setPin(e.target.value)}
+              onChange={(e) => {
+                setPin(e.target.value);
+                if (fieldErrors.pin) setFieldErrors((f) => ({ ...f, pin: undefined }));
+              }}
+              error={fieldErrors.pin}
+              shake={pinShake && Boolean(fieldErrors.pin)}
             />
             <Input
               label="Confirm with master password"
               type="password"
+              autoComplete="current-password"
               value={masterPassword}
-              onChange={(e) => setMasterPassword(e.target.value)}
+              onChange={(e) => {
+                setMasterPassword(e.target.value);
+                if (fieldErrors.masterPassword) {
+                  setFieldErrors((f) => ({ ...f, masterPassword: undefined }));
+                }
+              }}
+              error={fieldErrors.masterPassword}
+              shake={pinShake && Boolean(fieldErrors.masterPassword)}
             />
           </div>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             <Button onClick={enablePin} className="!w-auto px-4">
               {settings.pinEnabled ? "Change PIN" : "Enable PIN"}
             </Button>
@@ -151,6 +223,39 @@ export function SettingsPanel() {
             )}
           </div>
         </div>
+      </Panel>
+
+      <Panel>
+        <h2 className="font-semibold tracking-tight">On-page autofill</h2>
+        <p className="mt-1 text-xs text-perfil-muted">
+          Right-click any page for quick fill, or focus a field to pick a value from your profile.
+        </p>
+        <label className="mt-4 flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={settings.fieldPickerEnabled}
+            onChange={(e) => save({ fieldPickerEnabled: e.target.checked })}
+          />
+          <span>
+            <span className="font-medium">Field picker on focus</span>
+            <span className="mt-0.5 block text-xs text-perfil-muted">
+              When you click into an input, show a small menu to choose which profile value to fill
+            </span>
+          </span>
+        </label>
+        <p className="mt-3 text-xs text-perfil-muted">
+          Right-click menu: use the <strong className="text-perfil-text">toggle in the popup</strong>{" "}
+          (off by default; page background only, not search boxes).
+        </p>
+      </Panel>
+
+      <Panel>
+        <h2 className="font-semibold tracking-tight">Form memory</h2>
+        <p className="mt-1 text-xs text-perfil-muted">
+          Save long government or application forms by site so a refresh does not wipe your work.
+          Enable per site from the extension popup on that tab.
+        </p>
       </Panel>
 
       <Panel>
@@ -186,7 +291,11 @@ export function SettingsPanel() {
       </Panel>
 
       {message && <Alert variant="success">{message}</Alert>}
-      {error && <Alert variant="error">{error}</Alert>}
+      {formError && (
+        <div className={shakeKey > 0 ? "perfil-shake" : undefined}>
+          <Alert variant="error">{formError}</Alert>
+        </div>
+      )}
     </div>
   );
 }
