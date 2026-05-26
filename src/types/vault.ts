@@ -24,11 +24,31 @@ export interface VaultPayload {
   settings: VaultSettings;
 }
 
+/** Stored on vault blob (outside ciphertext) so recovery works while locked. */
+export interface VaultRecoveryMeta {
+  question: string;
+  answerVerifier: string;
+}
+
 export interface EncryptedVaultBlob {
   salt: string;
   iv: string;
   ciphertext: string;
   verifier: string;
+  recovery?: VaultRecoveryMeta;
+}
+
+export interface VaultRecoveryInfo {
+  enabled: boolean;
+  question: string | null;
+}
+
+export interface VaultSetupOptions {
+  settings?: Partial<VaultSettings>;
+  recovery?: {
+    question: string;
+    answer: string;
+  };
 }
 
 export interface VaultExportBundle {

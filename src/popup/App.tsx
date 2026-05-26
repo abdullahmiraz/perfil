@@ -3,9 +3,12 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Toast } from "@/components/ui/Toast";
 import { MasterPasswordForm } from "@/components/auth/MasterPasswordForm";
+import { RecoveryResetForm } from "@/components/auth/RecoveryResetForm";
+import { VaultSetupWizard } from "@/components/auth/VaultSetupWizard";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { PageShell } from "@/components/layout/PageShell";
 import { PopupHeaderActions } from "@/components/popup/PopupHeaderActions";
+import { PopupHomePanel } from "@/components/popup/PopupHomePanel";
 import { SiteToolsPanel } from "@/components/popup/SiteToolsPanel";
 import { ProfilePicker } from "@/components/profile/ProfilePicker";
 import { useFillActions } from "@/hooks/useFillActions";
@@ -13,6 +16,7 @@ import { useFeedback } from "@/hooks/useFeedback";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useVault } from "@/hooks/useVault";
 import { sendMessage } from "@/shared/messages";
+import type { VaultSetupOptions } from "@/types/vault";
 
 export function App() {
   const vault = useVault();
@@ -21,8 +25,11 @@ export function App() {
   const feedback = useFeedback();
   const [selectedId, setSelectedId] = useState("");
   const [pinEnabled, setPinEnabled] = useState(false);
+  const [recoveryEnabled, setRecoveryEnabled] = useState(false);
+  const [recoveryQuestion, setRecoveryQuestion] = useState<string | null>(null);
   const [pin, setPin] = useState("");
   const [usePin, setUsePin] = useState(false);
+  const [showRecovery, setShowRecovery] = useState(false);
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinShakeKey, setPinShakeKey] = useState(0);
 
@@ -32,9 +39,14 @@ export function App() {
 
   useEffect(() => {
     if (vault.status === "locked") {
-      void sendMessage({ type: "GET_SETTINGS" })
-        .then((r) => setPinEnabled(r.settings.pinEnabled))
-        .catch(() => setPinEnabled(false));
+      void Promise.all([
+        sendMessage({ type: "GET_SETTINGS" }),
+        sendMessage({ type: "GET_RECOVERY_INFO" }),
+      ]).then(([settingsRes, recoveryRes]) => {
+        setPinEnabled(settingsRes.settings.pinEnabled);
+        setRecoveryEnabled(recoveryRes.enabled);
+        setRecoveryQuestion(recoveryRes.question);
+      });
     }
   }, [vault.status]);
 
@@ -46,10 +58,15 @@ export function App() {
     />
   );
 
+  function openOptions() {
+    void chrome.runtime.openOptionsPage();
+  }
+
   async function handleLock() {
     fill.clearMessages();
     await vault.lock();
     setSelectedId("");
+    setShowRecovery(false);
     feedback.showSuccess("Locked");
   }
 
@@ -76,8 +93,8 @@ export function App() {
     if (ok) feedback.showSuccess("Unlocked");
   }
 
-  async function handleSetup(password: string) {
-    const ok = await vault.setup(password);
+  async function handleSetup(password: string, options: VaultSetupOptions) {
+    const ok = await vault.setup(password, options);
     if (ok) feedback.showSuccess("Vault ready");
   }
 
@@ -91,17 +108,21 @@ export function App() {
     />
   ) : null;
 
+  if (vault.loading) {
+    return (
+      <PageShell>
+        <AppHeader compact hideSubtitle actions={headerActions} />
+        <p className="mt-4 text-center text-[11px] text-perfil-muted">Loading…</p>
+      </PageShell>
+    );
+  }
+
   if (vault.status === "uninitialized") {
     return (
       <PageShell>
         {toast}
         <AppHeader compact hideSubtitle actions={headerActions} />
-        <MasterPasswordForm
-          mode="setup"
-          busy={vault.busy}
-          error={vault.error}
-          onSubmit={handleSetup}
-        />
+        <VaultSetupWizard busy={vault.busy} error={vault.error} onSubmit={handleSetup} />
       </PageShell>
     );
   }
@@ -111,53 +132,80 @@ export function App() {
       <PageShell>
         {toast}
         <AppHeader compact hideSubtitle actions={headerActions} />
-        {pinEnabled && (
-          <div className="mb-2 flex gap-2 text-[11px]">
-            <button
-              type="button"
-              className={!usePin ? "font-semibold text-perfil-accent" : "text-perfil-muted"}
-              onClick={() => setUsePin(false)}
-            >
-              Password
-            </button>
-            <span className="text-perfil-muted">·</span>
-            <button
-              type="button"
-              className={usePin ? "font-semibold text-perfil-accent" : "text-perfil-muted"}
-              onClick={() => setUsePin(true)}
-            >
-              PIN
-            </button>
-          </div>
-        )}
-        {usePin && pinEnabled ? (
-          <form onSubmit={handlePinUnlock} className="space-y-2">
-            <Input
-              key={`pin-${pinShakeKey}`}
-              label="PIN"
-              type="password"
-              inputMode="numeric"
-              autoComplete="off"
-              value={pin}
-              onChange={(e) => {
-                setPin(e.target.value);
-                if (pinError) setPinError(null);
-              }}
-              error={pinError}
-              shake={Boolean(pinError)}
-              required
-            />
-            <Button type="submit" fullWidth disabled={vault.busy} className="btn-compact">
-              {vault.busy ? "…" : "Unlock"}
-            </Button>
-          </form>
-        ) : (
-          <MasterPasswordForm
-            mode="unlock"
+        {showRecovery && recoveryQuestion ? (
+          <RecoveryResetForm
+            question={recoveryQuestion}
             busy={vault.busy}
-            error={vault.error}
-            onSubmit={handlePasswordUnlock}
+            onSuccess={async () => {
+              setShowRecovery(false);
+              await vault.refresh();
+              feedback.showSuccess("Password reset — vault unlocked");
+            }}
+            onCancel={() => setShowRecovery(false)}
           />
+        ) : (
+          <>
+            {pinEnabled && (
+              <div className="mb-2 flex gap-2 text-[11px]">
+                <button
+                  type="button"
+                  className={!usePin ? "font-semibold text-perfil-accent" : "text-perfil-muted"}
+                  onClick={() => setUsePin(false)}
+                >
+                  Password
+                </button>
+                <span className="text-perfil-muted">·</span>
+                <button
+                  type="button"
+                  className={usePin ? "font-semibold text-perfil-accent" : "text-perfil-muted"}
+                  onClick={() => setUsePin(true)}
+                >
+                  PIN
+                </button>
+              </div>
+            )}
+            {usePin && pinEnabled ? (
+              <form onSubmit={handlePinUnlock} className="space-y-2">
+                <Input
+                  key={`pin-${pinShakeKey}`}
+                  label="PIN"
+                  type="password"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={pin}
+                  onChange={(e) => {
+                    setPin(e.target.value);
+                    if (pinError) setPinError(null);
+                  }}
+                  error={pinError}
+                  shake={Boolean(pinError)}
+                  required
+                />
+                <Button type="submit" fullWidth disabled={vault.busy} className="btn-compact">
+                  {vault.busy ? "…" : "Unlock"}
+                </Button>
+              </form>
+            ) : (
+              <MasterPasswordForm
+                mode="unlock"
+                busy={vault.busy}
+                error={vault.error}
+                onSubmit={handlePasswordUnlock}
+              />
+            )}
+            {recoveryEnabled && (
+              <button
+                type="button"
+                className="mt-2 w-full text-center text-[11px] text-perfil-muted hover:text-perfil-accent"
+                onClick={() => {
+                  vault.clearError();
+                  setShowRecovery(true);
+                }}
+              >
+                Forgot master password?
+              </button>
+            )}
+          </>
         )}
       </PageShell>
     );
@@ -182,6 +230,7 @@ export function App() {
           onClick={fill.scan}
           disabled={fill.busy}
           className="btn-compact shrink-0"
+          title="Find fillable fields on this tab"
         >
           Scan
         </Button>
@@ -189,6 +238,7 @@ export function App() {
           onClick={() => fill.fill(selectedId || undefined)}
           disabled={fill.busy}
           className="btn-compact shrink-0"
+          title="Apply the selected profile to this page"
         >
           Fill
         </Button>
@@ -199,6 +249,13 @@ export function App() {
           {fill.error ?? fill.info}
         </p>
       )}
+
+      <PopupHomePanel
+        profileCount={profiles.profiles.length}
+        onOpenProfiles={openOptions}
+        onOpenSettings={openOptions}
+        onLock={() => void handleLock()}
+      />
 
       <SiteToolsPanel
         onFeedback={(msg, v) => (v === "error" ? feedback.showError(msg) : feedback.showSuccess(msg))}

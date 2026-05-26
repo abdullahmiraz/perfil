@@ -2,7 +2,7 @@ import type { FillResult } from "@/types/fill";
 import type { FillContext } from "@/types/fill-context";
 import type { FormDraftStatus } from "@/types/form-draft";
 import type { Profile } from "@/types/profile";
-import type { VaultSettings, VaultStatus } from "@/types/vault";
+import type { VaultRecoveryInfo, VaultSettings, VaultSetupOptions, VaultStatus } from "@/types/vault";
 
 export interface MessageResponses {
   GET_STATUS: { status: VaultStatus; profileCount: number };
@@ -10,6 +10,10 @@ export interface MessageResponses {
   UNLOCK_PIN: { ok: boolean; error?: string };
   LOCK: { ok: boolean };
   SETUP: { ok: boolean; error?: string };
+  GET_RECOVERY_INFO: VaultRecoveryInfo;
+  RESET_MASTER_PASSWORD: { ok: boolean; error?: string };
+  UPDATE_RECOVERY: { ok: boolean; error?: string };
+  CLEAR_RECOVERY: { ok: boolean; error?: string };
   GET_PROFILES: { profiles: Profile[] };
   GET_SETTINGS: { settings: VaultSettings };
   SAVE_SETTINGS: { settings: VaultSettings };
@@ -39,7 +43,16 @@ export type MessageRequest =
   | { type: "LOCK" }
   | { type: "UNLOCK"; password: string }
   | { type: "UNLOCK_PIN"; pin: string }
-  | { type: "SETUP"; password: string }
+  | { type: "SETUP"; password: string; options?: VaultSetupOptions }
+  | { type: "GET_RECOVERY_INFO" }
+  | { type: "RESET_MASTER_PASSWORD"; answer: string; newPassword: string }
+  | {
+      type: "UPDATE_RECOVERY";
+      question: string;
+      answer: string;
+      masterPassword: string;
+    }
+  | { type: "CLEAR_RECOVERY"; masterPassword: string }
   | { type: "GET_PROFILES" }
   | { type: "GET_SETTINGS" }
   | { type: "SAVE_SETTINGS"; settings: Partial<VaultSettings> }

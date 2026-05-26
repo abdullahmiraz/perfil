@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { CompactToggle } from "@/components/ui/CompactToggle";
-import { InfoTip } from "@/components/ui/InfoTip";
+import { HoverTip } from "@/components/ui/HoverTip";
 import { Select } from "@/components/ui/Select";
 import { sendMessage } from "@/shared/messages";
 import type { FormDraftStatus } from "@/types/form-draft";
@@ -10,14 +10,14 @@ export interface SiteToolsPanelProps {
 }
 
 function ActionButton({
-  title,
+  tip,
   onClick,
   disabled,
   children,
   danger,
   accent,
 }: {
-  title: string;
+  tip: string;
   onClick: () => void;
   disabled?: boolean;
   children: string;
@@ -25,22 +25,23 @@ function ActionButton({
   accent?: boolean;
 }) {
   return (
-    <button
-      type="button"
-      title={title}
-      disabled={disabled}
-      onClick={onClick}
-      className={[
-        "flex-1 border-l border-perfil-border px-1 py-1.5 text-[11px] font-medium transition-colors first:border-l-0",
-        "disabled:opacity-40",
-        accent
-          ? "bg-perfil-accent/15 text-perfil-accent hover:bg-perfil-accent/25"
-          : "hover:bg-perfil-surface",
-        danger ? "text-perfil-danger" : !accent ? "text-perfil-text" : "",
-      ].join(" ")}
-    >
-      {children}
-    </button>
+    <HoverTip text={tip} className="flex-1 min-w-0">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onClick}
+        className={[
+          "w-full border-l border-perfil-border px-1 py-1.5 text-[11px] font-medium transition-colors first:border-l-0",
+          "disabled:opacity-40",
+          accent
+            ? "bg-perfil-accent/15 text-perfil-accent hover:bg-perfil-accent/25"
+            : "hover:bg-perfil-surface",
+          danger ? "text-perfil-danger" : !accent ? "text-perfil-text" : "",
+        ].join(" ")}
+      >
+        {children}
+      </button>
+    </HoverTip>
   );
 }
 
@@ -150,8 +151,12 @@ export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
 
       <div className="rounded-lg border border-perfil-border/80 bg-perfil-bg/40 px-2 py-1.5">
         <div className="mb-1 flex items-center gap-1">
-          <span className="text-[11px] font-medium text-perfil-text">Saved forms</span>
-          <InfoTip text="Saves match this exact URL. Save the page, then restore after refresh." />
+          <HoverTip
+            text="Saves match this exact URL. Save the page, then restore after refresh."
+            className="min-w-0"
+          >
+            <span className="cursor-help text-[11px] font-medium text-perfil-text">Saved forms</span>
+          </HoverTip>
           {pathLabel && (
             <span className="ml-auto max-w-[42%] truncate text-[10px] text-perfil-muted" title={status?.pageUrl}>
               {pathLabel}
@@ -176,7 +181,7 @@ export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
             />
             <div className="mt-1 flex w-full overflow-hidden rounded-md border border-perfil-border bg-perfil-bg/50">
               <ActionButton
-                title="Save what's on the page now as a new snapshot"
+                tip="Save what's on the page now as a new snapshot"
                 disabled={busy}
                 accent
                 onClick={() => void saveDraft()}
@@ -184,14 +189,14 @@ export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
                 Save current
               </ActionButton>
               <ActionButton
-                title="Fill the page from the selected snapshot"
+                tip="Fill the page from the selected snapshot"
                 disabled={busy || !selectedSaveId}
                 onClick={() => void restoreDraft()}
               >
                 Restore
               </ActionButton>
               <ActionButton
-                title="Delete the selected snapshot"
+                tip="Delete the selected snapshot"
                 disabled={busy || !selectedSaveId}
                 onClick={() => void clearSelected()}
                 danger

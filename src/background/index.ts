@@ -7,6 +7,7 @@ import {
   saveTabFormDraft,
 } from "@/background/form-draft-tab";
 import { fillActiveTab, scanActiveTab } from "@/background/fill-tab";
+import { defaultVaultSettings } from "@/lib/profile-defaults";
 import { vaultService } from "@/lib/vault-service";
 import type { MessageRequest, MessageResponse, MessageType } from "@/types/messages";
 
@@ -30,7 +31,9 @@ function fallbackError(type: MessageType, err: unknown): MessageResponse<Message
     case "GET_STATUS":
       return { status: "uninitialized", profileCount: 0 };
     case "GET_SETTINGS":
-      return { settings: vaultService.getSettings() };
+      return { settings: defaultVaultSettings() };
+    case "GET_RECOVERY_INFO":
+      return { enabled: false, question: null };
     case "GET_FILL_CONTEXT":
       return {
         unlocked: false,
@@ -42,6 +45,9 @@ function fallbackError(type: MessageType, err: unknown): MessageResponse<Message
     case "UNLOCK":
     case "UNLOCK_PIN":
     case "SETUP":
+    case "RESET_MASTER_PASSWORD":
+    case "UPDATE_RECOVERY":
+    case "CLEAR_RECOVERY":
     case "SET_PIN":
     case "CLEAR_PIN":
     case "COPY_CUSTOM_FIELDS":
@@ -80,7 +86,12 @@ async function handleMessage(
   request: MessageRequest,
 ): Promise<MessageResponse<MessageType>> {
   await vaultService.whenReady();
-  if (vaultService.isUnlocked() && request.type !== "LOCK" && request.type !== "SETUP") {
+  if (
+    vaultService.isUnlocked() &&
+    request.type !== "LOCK" &&
+    request.type !== "SETUP" &&
+    request.type !== "RESET_MASTER_PASSWORD"
+  ) {
     vaultService.touchActivity();
   }
 
@@ -104,14 +115,36 @@ async function handleMessage(
       await safeNotifyFillContextChanged();
       return { ok: true };
     case "SETUP": {
-      const res = await vaultService.setup(request.password);
+      const res = await vaultService.setup(request.password, request.options);
       if (res.ok) await safeNotifyFillContextChanged();
       return res;
     }
+    case "GET_RECOVERY_INFO":
+      return vaultService.getRecoveryInfo();
+    case "RESET_MASTER_PASSWORD": {
+      const res = await vaultService.resetMasterPassword(
+        request.answer,
+        request.newPassword,
+      );
+      if (res.ok) await safeNotifyFillContextChanged();
+      return res;
+    }
+    case "UPDATE_RECOVERY":
+      return vaultService.updateRecovery(
+        request.question,
+        request.answer,
+        request.masterPassword,
+      );
+    case "CLEAR_RECOVERY":
+      return vaultService.clearRecovery(request.masterPassword);
     case "GET_PROFILES":
       return { profiles: vaultService.getProfiles() };
     case "GET_SETTINGS":
-      return { settings: vaultService.getSettings() };
+      return {
+        settings: vaultService.isUnlocked()
+          ? vaultService.getSettings()
+          : await vaultService.getLockedSettings(),
+      };
     case "SAVE_SETTINGS": {
       const settings = await vaultService.saveSettings(request.settings);
       await safeNotifyFillContextChanged();

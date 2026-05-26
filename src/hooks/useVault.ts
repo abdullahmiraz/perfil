@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { sanitizeUserError, toErrorMessage } from "@/shared/errors";
 import { getVaultStatus, sendMessage } from "@/shared/messages";
-import type { VaultStatus } from "@/types/vault";
+import type { VaultSetupOptions, VaultStatus } from "@/types/vault";
 
 export interface UseVaultResult {
   status: VaultStatus;
@@ -10,7 +10,7 @@ export interface UseVaultResult {
   error: string | null;
   busy: boolean;
   refresh: () => Promise<void>;
-  setup: (password: string) => Promise<boolean>;
+  setup: (password: string, options?: VaultSetupOptions) => Promise<boolean>;
   unlock: (password: string) => Promise<boolean>;
   lock: () => Promise<void>;
   clearError: () => void;
@@ -40,11 +40,11 @@ export function useVault(): UseVaultResult {
   }, [refresh]);
 
   const setup = useCallback(
-    async (password: string) => {
+    async (password: string, options?: VaultSetupOptions) => {
       setBusy(true);
       setError(null);
       try {
-        const res = await sendMessage({ type: "SETUP", password });
+        const res = await sendMessage({ type: "SETUP", password, options });
         if (!res.ok) {
           setError(sanitizeUserError(res.error ?? "Setup failed"));
           return false;

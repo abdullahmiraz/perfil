@@ -11,6 +11,7 @@ import {
   validatePinForm,
   type FieldErrorMap,
 } from "@/lib/form-errors";
+import { RECOVERY_QUESTION_PRESETS } from "@/lib/vault-recovery";
 import type { AutoLockMinutes, VaultSettings } from "@/types/vault";
 
 const LOCK_OPTIONS: { value: string; label: string }[] = [
@@ -34,9 +35,20 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
   const [formError, setFormError] = useState("");
   const [fieldErrors, setFieldErrors] = useState<FieldErrorMap>({});
   const [shakeKey, setShakeKey] = useState(0);
+  const [recoveryEnabled, setRecoveryEnabled] = useState(false);
+  const [recoveryPreset, setRecoveryPreset] = useState<string>(RECOVERY_QUESTION_PRESETS[0]);
+  const [recoveryCustomQ, setRecoveryCustomQ] = useState("");
+  const [recoveryAnswer, setRecoveryAnswer] = useState("");
+  const [recoveryMasterPw, setRecoveryMasterPw] = useState("");
 
   useEffect(() => {
-    void sendMessage({ type: "GET_SETTINGS" }).then((r) => setSettings(r.settings));
+    void Promise.all([
+      sendMessage({ type: "GET_SETTINGS" }),
+      sendMessage({ type: "GET_RECOVERY_INFO" }),
+    ]).then(([settingsRes, recoveryRes]) => {
+      setSettings(settingsRes.settings);
+      setRecoveryEnabled(recoveryRes.enabled);
+    });
   }, []);
 
   function bumpShake() {
@@ -255,6 +267,100 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
         <p className="mt-1 text-xs text-perfil-muted">
           Manual saves per exact page URL — use the extension popup on that tab (Save / Fill dropdown).
         </p>
+      </Panel>
+
+      <Panel>
+        <h2 className="font-semibold tracking-tight">Password recovery</h2>
+        <p className="mt-1 text-xs text-perfil-muted">
+          If you forget your master password, answer this question in the popup to set a new one.
+          Stored only on this device (hashed).
+        </p>
+        {recoveryEnabled ? (
+          <p className="mt-2 text-xs text-perfil-success">Recovery question is set</p>
+        ) : (
+          <p className="mt-2 text-xs text-perfil-muted">Not configured yet</p>
+        )}
+        <div className="mt-3 grid gap-3">
+          <Select
+            label="Question"
+            value={recoveryPreset}
+            onChange={(e) => setRecoveryPreset(e.target.value)}
+            options={[
+              ...RECOVERY_QUESTION_PRESETS.map((q) => ({ value: q, label: q })),
+              { value: "custom", label: "Write your own…" },
+            ]}
+          />
+          {recoveryPreset === "custom" && (
+            <Input
+              label="Your question"
+              value={recoveryCustomQ}
+              onChange={(e) => setRecoveryCustomQ(e.target.value)}
+            />
+          )}
+          <Input
+            label="Answer"
+            type="password"
+            autoComplete="off"
+            value={recoveryAnswer}
+            onChange={(e) => setRecoveryAnswer(e.target.value)}
+          />
+          <Input
+            label="Master password (to save)"
+            type="password"
+            autoComplete="current-password"
+            value={recoveryMasterPw}
+            onChange={(e) => setRecoveryMasterPw(e.target.value)}
+          />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            className="!w-auto px-4"
+            onClick={async () => {
+              const question =
+                recoveryPreset === "custom" ? recoveryCustomQ.trim() : recoveryPreset;
+              const res = await sendMessage({
+                type: "UPDATE_RECOVERY",
+                question,
+                answer: recoveryAnswer,
+                masterPassword: recoveryMasterPw,
+              });
+              if (res.ok) {
+                setMessage("Recovery updated");
+                onFeedback?.("Recovery updated", "success");
+                setRecoveryAnswer("");
+                setRecoveryMasterPw("");
+                setRecoveryEnabled(true);
+              } else {
+                setFormError(res.error ?? "Failed");
+                onFeedback?.(res.error ?? "Failed", "error");
+              }
+            }}
+          >
+            {recoveryEnabled ? "Update recovery" : "Set up recovery"}
+          </Button>
+          {recoveryEnabled && (
+            <Button
+              variant="secondary"
+              className="!w-auto px-4"
+              onClick={async () => {
+                const res = await sendMessage({
+                  type: "CLEAR_RECOVERY",
+                  masterPassword: recoveryMasterPw,
+                });
+                if (res.ok) {
+                  setMessage("Recovery removed");
+                  onFeedback?.("Recovery removed", "success");
+                  setRecoveryEnabled(false);
+                  setRecoveryMasterPw("");
+                } else {
+                  setFormError(res.error ?? "Failed");
+                }
+              }}
+            >
+              Remove recovery
+            </Button>
+          )}
+        </div>
       </Panel>
 
       <Panel>

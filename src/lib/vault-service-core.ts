@@ -5,7 +5,19 @@ import { defaultVaultPayload, defaultVaultSettings } from "@/lib/profile-default
 import { clearSession, loadSession, saveSession } from "@/lib/session-storage";
 import { loadEncryptedVault, saveEncryptedVault, vaultExists } from "@/lib/storage";
 import type { Profile } from "@/types/profile";
-import type { VaultExportBundle, VaultPayload, VaultSettings, VaultStatus } from "@/types/vault";
+import {
+  isRecoveryAnswerValid,
+  recoveryAnswerVerifier,
+} from "@/lib/vault-recovery";
+import type {
+  VaultExportBundle,
+  VaultPayload,
+  VaultRecoveryInfo,
+  VaultRecoveryMeta,
+  VaultSettings,
+  VaultSetupOptions,
+  VaultStatus,
+} from "@/types/vault";
 
 /** Phase 1 encoding; Phase 2 replaces with AES-GCM. */
 export class VaultService {
@@ -110,11 +122,28 @@ export class VaultService {
     return this.payload?.settings ?? defaultVaultSettings();
   }
 
+  async getLockedSettings(): Promise<VaultSettings> {
+    const blob = await loadEncryptedVault();
+    if (!blob) return defaultVaultSettings();
+    return this.peekSettings(blob);
+  }
+
+  async getRecoveryInfo(): Promise<VaultRecoveryInfo> {
+    const blob = await loadEncryptedVault();
+    if (!blob?.recovery?.question) {
+      return { enabled: false, question: null };
+    }
+    return { enabled: true, question: blob.recovery.question };
+  }
+
   isUnlocked(): boolean {
     return this.status === "unlocked" && this.payload !== null;
   }
 
-  async setup(password: string): Promise<{ ok: boolean; error?: string }> {
+  async setup(
+    password: string,
+    options?: VaultSetupOptions,
+  ): Promise<{ ok: boolean; error?: string }> {
     await this.whenReady();
     if (password.length < 8) {
       return { ok: false, error: "Master password must be at least 8 characters" };
@@ -123,14 +152,93 @@ export class VaultService {
       return { ok: false, error: "Vault already exists" };
     }
 
+    let recoveryMeta: VaultRecoveryMeta | undefined;
+    if (options?.recovery) {
+      const q = options.recovery.question.trim();
+      if (q.length < 5) {
+        return { ok: false, error: "Recovery question is too short" };
+      }
+      if (!isRecoveryAnswerValid(options.recovery.answer)) {
+        return { ok: false, error: "Recovery answer must be at least 3 characters" };
+      }
+      recoveryMeta = {
+        question: q,
+        answerVerifier: recoveryAnswerVerifier(options.recovery.answer),
+      };
+    }
+
     const payload: VaultPayload = {
       ...defaultVaultPayload(),
       profiles: [createDefaultPersonalProfile()],
     };
+    payload.settings = {
+      ...payload.settings,
+      ...options?.settings,
+    };
     payload.settings.defaultProfileId = payload.profiles[0]?.id ?? null;
 
-    await this.persist(payload, password);
+    await this.persist(payload, password, recoveryMeta);
     await this.unlockInMemory(payload, password, "password");
+    return { ok: true };
+  }
+
+  async resetMasterPassword(
+    answer: string,
+    newPassword: string,
+  ): Promise<{ ok: boolean; error?: string }> {
+    await this.whenReady();
+    if (newPassword.length < 8) {
+      return { ok: false, error: "New password must be at least 8 characters" };
+    }
+    const blob = await loadEncryptedVault();
+    if (!blob) return { ok: false, error: "No vault found" };
+    if (!blob.recovery?.answerVerifier) {
+      return { ok: false, error: "Recovery was not set up" };
+    }
+    if (blob.recovery.answerVerifier !== recoveryAnswerVerifier(answer)) {
+      return { ok: false, error: "Incorrect recovery answer" };
+    }
+
+    const payload = migratePayload(this.decodePayload(blob.ciphertext));
+    await this.persist(payload, newPassword, blob.recovery);
+    await this.unlockInMemory(payload, newPassword, "password");
+    return { ok: true };
+  }
+
+  async updateRecovery(
+    question: string,
+    answer: string,
+    masterPassword: string,
+  ): Promise<{ ok: boolean; error?: string }> {
+    if (!this.payload) return { ok: false, error: "Vault locked" };
+    const blob = await loadEncryptedVault();
+    if (!blob || blob.verifier !== this.verifier(masterPassword)) {
+      return { ok: false, error: "Master password required" };
+    }
+    const q = question.trim();
+    if (q.length < 5) return { ok: false, error: "Question is too short" };
+    if (!isRecoveryAnswerValid(answer)) {
+      return { ok: false, error: "Answer must be at least 3 characters" };
+    }
+    const recovery: VaultRecoveryMeta = {
+      question: q,
+      answerVerifier: recoveryAnswerVerifier(answer),
+    };
+    await saveEncryptedVault({
+      ...blob,
+      recovery,
+    });
+    return { ok: true };
+  }
+
+  async clearRecovery(masterPassword: string): Promise<{ ok: boolean; error?: string }> {
+    if (!this.payload) return { ok: false, error: "Vault locked" };
+    const blob = await loadEncryptedVault();
+    if (!blob || blob.verifier !== this.verifier(masterPassword)) {
+      return { ok: false, error: "Master password required" };
+    }
+    const { recovery: _r, ...rest } = blob;
+    await saveEncryptedVault(rest);
     return { ok: true };
   }
 
@@ -335,12 +443,18 @@ export class VaultService {
     this.resetIdleTimer();
   }
 
-  private async persist(payload: VaultPayload, password: string): Promise<void> {
+  private async persist(
+    payload: VaultPayload,
+    password: string,
+    recovery?: VaultRecoveryMeta,
+  ): Promise<void> {
+    const existing = await loadEncryptedVault();
     await saveEncryptedVault({
       salt: btoa("perfil-phase1-salt"),
       iv: btoa("perfil-phase1-iv"),
       ciphertext: this.encodePayload(migratePayload(payload)),
       verifier: this.verifier(password),
+      recovery: recovery ?? existing?.recovery,
     });
   }
 

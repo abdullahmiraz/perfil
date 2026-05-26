@@ -1,4 +1,4 @@
-import { InfoTip } from "@/components/ui/InfoTip";
+import { HoverTip } from "@/components/ui/HoverTip";
 
 export interface CompactToggleProps {
   checked: boolean;
@@ -9,11 +9,20 @@ export interface CompactToggleProps {
 }
 
 export function CompactToggle({ checked, onChange, label, info, disabled }: CompactToggleProps) {
+  const labelEl = (
+    <span className="truncate">{label}</span>
+  );
+
   return (
     <div className="flex items-center justify-between gap-2 py-1">
       <span className="flex min-w-0 items-center gap-1.5 text-xs font-medium text-perfil-text">
-        <span className="truncate">{label}</span>
-        {info && <InfoTip text={info} label={`About ${label}`} />}
+        {info ? (
+          <HoverTip text={info} className="min-w-0 cursor-help">
+            {labelEl}
+          </HoverTip>
+        ) : (
+          labelEl
+        )}
       </span>
       <button
         type="button"

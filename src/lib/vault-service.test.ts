@@ -55,4 +55,30 @@ describe("VaultService", () => {
     expect(personal?.data.email).toBe("alex.morgan@example.com");
     expect(personal?.customFields.length).toBeGreaterThan(0);
   });
+
+  it("setup with recovery allows reset when password forgotten", async () => {
+    const { VaultService } = await import("@/lib/vault-service-core");
+    const vault = new VaultService();
+    await vault.whenReady();
+
+    const setup = await vault.setup("original-password", {
+      recovery: {
+        question: "What city were you born in?",
+        answer: "Springfield",
+      },
+    });
+    expect(setup.ok).toBe(true);
+
+    await vault.lock();
+    const bad = await vault.resetMasterPassword("wrong", "new-password-99");
+    expect(bad.ok).toBe(false);
+
+    const reset = await vault.resetMasterPassword("springfield", "new-password-99");
+    expect(reset.ok).toBe(true);
+    expect(vault.isUnlocked()).toBe(true);
+
+    await vault.lock();
+    const unlock = await vault.unlock("new-password-99");
+    expect(unlock.ok).toBe(true);
+  });
 });
