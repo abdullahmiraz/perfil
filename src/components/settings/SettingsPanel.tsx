@@ -253,8 +253,7 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
       <Panel>
         <h2 className="font-semibold tracking-tight">Form memory</h2>
         <p className="mt-1 text-xs text-perfil-muted">
-          Save long government or application forms by site so a refresh does not wipe your work.
-          Enable per site from the extension popup on that tab.
+          Manual saves per exact page URL — use the extension popup on that tab (Save / Fill dropdown).
         </p>
       </Panel>
 

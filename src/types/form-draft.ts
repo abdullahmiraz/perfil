@@ -1,28 +1,20 @@
-/** How form drafts are keyed in storage. */
-export type FormDraftScope = "domain" | "url";
+/** @deprecated Domain scope removed — saves are always exact page URL. */
+export type FormDraftScope = "url";
 
-export interface SiteDraftPrefs {
-  /** Remember forms on this site */
-  enabled: boolean;
-  /** Save while typing (debounced) */
-  autoSave: boolean;
-  scope: FormDraftScope;
-}
-
-export interface FormDraft {
-  storageKey: string;
-  scope: FormDraftScope;
-  hostname: string;
-  url: string;
+/** One manual save for a specific page URL. */
+export interface SavedFormSnapshot {
+  id: string;
+  /** Full page URL without hash */
+  pageUrl: string;
+  /** Shown in dropdown, e.g. "Mar 26, 3:45 PM · 5 fields" */
+  label: string;
   savedAt: number;
-  /** Stable field id → value */
   fields: Record<string, string>;
 }
 
 export interface FormDraftStatus {
-  hostname: string;
-  url: string;
-  prefs: SiteDraftPrefs;
-  draft: FormDraft | null;
+  pageUrl: string;
+  /** Manual saves for this exact URL */
+  saved: SavedFormSnapshot[];
   fillableCount: number;
 }

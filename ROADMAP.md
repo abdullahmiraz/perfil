@@ -16,7 +16,23 @@ Reference: [Bitwarden unlock & timeout](https://bitwarden.com/help/unlock-with-p
 | P3 Backup import/export | v0.2 | **Shipped** |
 | P4 Unlock + on-page UX | v0.2 | **Shipped** |
 | P4b Form memory + menu toggle | v0.2.1 | **Shipped** |
+| P4c Compact popup + URL form saves | v0.2.2 | **Shipped** |
 | P5 Security + advanced fill | — | **Not started** |
+
+---
+
+## P4c — Compact popup & URL-scoped form saves (v0.2.2)
+
+| # | Item | Detail | Status |
+|---|------|--------|--------|
+| 1 | Compact popup layout | Minimal first view; smaller buttons; less explanatory text | [x] |
+| 2 | Header actions | Settings (gear) + Lock/Profiles top-right beside brand | [x] |
+| 3 | Info tooltips `(i)` | Long help text hidden behind icon popover (e.g. right-click menu) | [x] |
+| 4 | Narrow profile control | Compact profile dropdown, not full-width | [x] |
+| 5 | URL-only form saves | Key by exact page URL (e.g. `…/test/form/1`), not whole domain | [x] |
+| 6 | Manual save only | No auto-save while typing; no auto-restore on load | [x] |
+| 7 | Saved forms dropdown | List manual saves for current URL; user picks which to restore | [x] |
+| 8 | Restore on demand | Fill only via Restore button, context menu, or dropdown selection | [x] |
 
 ---
 
@@ -96,13 +112,11 @@ Reference: [Bitwarden unlock & timeout](https://bitwarden.com/help/unlock-with-p
 
 Inspired by [Lightning Autofill](https://chromewebstore.google.com/detail/lightning-autofill/nlmmgnhgdeffjkdckmikfpnddkbbfkkk) form recovery — local only, no cloud.
 
-- [x] **Form memory** per site: save field values by **domain** or **exact page URL**
-- [x] **Manual save** / **restore** / **clear** (popup + right-click when menu enabled)
-- [x] **Auto-save while typing** (optional per site, debounced)
-- [x] **Auto-restore** on page load when memory is enabled for that site
-- [x] **Right-click menu toggle** in popup (pill switch; **off by default**)
+- [x] **Right-click menu toggle** in popup (**off by default**)
 - [x] Context menu only on **page background** — not on search boxes / single inputs
-- [x] Form memory works even when vault is locked (stored in `chrome.storage.local`)
+- [x] Form memory stored in `chrome.storage.local` (no vault required)
+
+> **Superseded by P4c:** URL-only manual saves, dropdown picker, no auto-save/auto-restore.
 
 ---
 
@@ -145,5 +159,5 @@ npm run dev             # load dist/ in chrome://extensions (keep running)
 | Context menu toggle | Popup → Right-click menu (enable first) |
 | Context menu | Right-click **page background** (not inputs) |
 | Field picker | Focus an input (setting enabled) |
-| Form memory | Popup on that tab → Remember forms → Save / Restore |
+| Form memory | Popup → Save / dropdown Fill (exact URL only) |
 | Default Personal data | New vault setup only |

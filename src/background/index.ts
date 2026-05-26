@@ -5,7 +5,6 @@ import {
   getTabFormDraftStatus,
   restoreTabFormDraft,
   saveTabFormDraft,
-  setTabSiteDraftPrefs,
 } from "@/background/form-draft-tab";
 import { fillActiveTab, scanActiveTab } from "@/background/fill-tab";
 import { vaultService } from "@/lib/vault-service";
@@ -65,8 +64,6 @@ function fallbackError(type: MessageType, err: unknown): MessageResponse<Message
     case "FILL_ACTIVE_TAB":
       return { error: msg };
     case "GET_TAB_FORM_DRAFT_STATUS":
-      return { error: msg };
-    case "SET_TAB_SITE_DRAFT_PREFS":
       return { error: msg };
     case "SAVE_TAB_FORM_DRAFT":
       return { error: msg };
@@ -164,14 +161,12 @@ async function handleMessage(
       return fillActiveTab(request.profileId, request.minConfidence);
     case "GET_TAB_FORM_DRAFT_STATUS":
       return getTabFormDraftStatus();
-    case "SET_TAB_SITE_DRAFT_PREFS":
-      return setTabSiteDraftPrefs(request.prefs);
     case "SAVE_TAB_FORM_DRAFT":
       return saveTabFormDraft();
     case "RESTORE_TAB_FORM_DRAFT":
-      return restoreTabFormDraft();
+      return restoreTabFormDraft(request.draftId);
     case "CLEAR_TAB_FORM_DRAFT":
-      return clearTabFormDraft();
+      return clearTabFormDraft(request.draftId);
     default:
       throw new Error("Unknown message type");
   }

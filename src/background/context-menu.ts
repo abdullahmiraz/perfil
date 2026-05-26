@@ -84,7 +84,7 @@ async function addDraftMenuItems(): Promise<void> {
   await chrome.contextMenus.create({
     id: DRAFT_RESTORE_ID,
     parentId: ROOT_ID,
-    title: "Restore saved form",
+    title: "Fill saved form (latest)",
     contexts: ["page"],
   });
   await chrome.contextMenus.create({

@@ -7,8 +7,8 @@ export type ContentMessage =
   | { type: "FILL_FIELDS"; profile: Profile; minConfidence?: number }
   | { type: "GET_FORM_DRAFT_STATUS" }
   | { type: "SNAPSHOT_FORM_DRAFT" }
-  | { type: "RESTORE_FORM_DRAFT" }
-  | { type: "CLEAR_FORM_DRAFT" };
+  | { type: "RESTORE_FORM_DRAFT"; draftId?: string }
+  | { type: "CLEAR_FORM_DRAFT"; draftId?: string };
 
 /** Messages sent from the background script to the content script. */
 export type ContentTabMessage =
@@ -19,6 +19,6 @@ export type ContentMessageResponse =
   | { ok: true }
   | { fieldCount: number; matches: Array<{ fieldKey: string; confidence: number; label: string }> }
   | FillResult
-  | { fillableCount: number }
-  | { fieldCount: number; savedAt?: number }
+  | { fillableCount: number; pageUrl: string }
+  | { fieldCount: number; savedAt?: number; id?: string }
   | { restored: number };

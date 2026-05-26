@@ -1,6 +1,7 @@
 import {
-  applyStoredDraft,
-  clearStoredDraftForPage,
+  applyLatestSavedForPage,
+  applySavedSnapshot,
+  clearSavedSnapshot,
   getFormDraftStatusSync,
   initFormDraft,
   snapshotFormDraft,
@@ -46,12 +47,18 @@ chrome.runtime.onMessage.addListener(
     }
 
     if (message.type === "RESTORE_FORM_DRAFT") {
-      void applyStoredDraft().then((restored) => sendResponse({ restored }));
+      void (message.draftId ? applySavedSnapshot(message.draftId) : applyLatestSavedForPage()).then(
+        (restored) => sendResponse({ restored }),
+      );
       return true;
     }
 
     if (message.type === "CLEAR_FORM_DRAFT") {
-      void clearStoredDraftForPage().then(() => sendResponse({ ok: true }));
+      if (message.draftId) {
+        void clearSavedSnapshot(message.draftId).then(() => sendResponse({ ok: true }));
+      } else {
+        sendResponse({ ok: true });
+      }
       return true;
     }
 

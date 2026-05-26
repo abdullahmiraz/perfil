@@ -1,12 +1,15 @@
 import { detectFields, getFieldElement, isFillableElement } from "@/lib/field-detector";
 import { fillElementValue } from "@/lib/fill-engine";
 import type { SerializableField } from "@/types/fill";
-import type { FormDraft, FormDraftScope } from "@/types/form-draft";
 
-export function draftStorageKey(pageUrl: string, scope: FormDraftScope): string {
-  const u = new URL(pageUrl);
-  if (scope === "domain") return u.hostname;
-  return u.href.split("#")[0] ?? u.href;
+/** Exact page URL (no hash) — e.g. https://mygov.usa.gov/test/form/1 */
+export function draftStorageKey(pageUrl: string): string {
+  try {
+    const u = new URL(pageUrl);
+    return u.href.split("#")[0] ?? u.href;
+  } catch {
+    return pageUrl.split("#")[0] ?? pageUrl;
+  }
 }
 
 export function fieldStorageKey(field: SerializableField): string {
@@ -50,20 +53,4 @@ export function restoreFormFields(
 
 export function countFillableFields(root: ParentNode = document): number {
   return detectFields(root).length;
-}
-
-export function buildDraft(
-  pageUrl: string,
-  scope: FormDraftScope,
-  fields: Record<string, string>,
-): FormDraft {
-  const u = new URL(pageUrl);
-  return {
-    storageKey: draftStorageKey(pageUrl, scope),
-    scope,
-    hostname: u.hostname,
-    url: pageUrl,
-    savedAt: Date.now(),
-    fields,
-  };
 }
