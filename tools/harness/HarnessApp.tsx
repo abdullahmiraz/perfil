@@ -1,6 +1,12 @@
 import { useRef, useState } from "react";
-import { fillForm, readFormValues, scanForm, type FillReport, type ScanReport } from "@/lib/fill-api";
-import { harnessFormHtml, harnessProfile } from "@/lib/fixtures/harness";
+import {
+  fillForm,
+  readFormValues,
+  scanForm,
+  type FillReport,
+  type ScanReport,
+} from "@/lib/fill-api";
+import { harnessFormHtml, harnessProfile } from "./data";
 import "@/styles/globals.css";
 
 export function HarnessApp() {
@@ -41,7 +47,8 @@ export function HarnessApp() {
       <header className="border-b border-perfil-border px-6 py-4">
         <h1 className="text-xl font-semibold tracking-tight">Perfil Dev Harness</h1>
         <p className="text-sm text-perfil-muted">
-          Live scan/fill API — profile from <code className="text-perfil-accent">fixtures/profiles/demo.json</code>
+          Live scan/fill API — profile from{" "}
+          <code className="text-perfil-accent">fixtures/profiles/demo.json</code>
         </p>
       </header>
 
@@ -79,7 +86,11 @@ export function HarnessApp() {
 
         <section className="space-y-4">
           <ReportPanel title="Scan report" data={scan} empty="Click Scan to analyze fields" />
-          <ReportPanel title="Fill report" data={fill} empty="Click Fill to autofill matched fields" />
+          <ReportPanel
+            title="Fill report"
+            data={fill}
+            empty="Click Fill to autofill matched fields"
+          />
         </section>
       </div>
 
@@ -133,7 +144,7 @@ function ReportPanel({
           </thead>
           <tbody>
             {rows.map((row, i) => (
-              <tr key={i} className="border-t border-perfil-border/50">
+              <tr key={i} className="border-perfil-border/50 border-t">
                 <td className="py-2 pr-2">{row.label}</td>
                 <td className="py-2 pr-2 font-mono text-perfil-accent">
                   {"fieldKey" in row ? row.fieldKey : "—"}

@@ -29,7 +29,9 @@ export function migratePayload(raw: unknown): VaultPayload {
   };
 }
 
-export function profileDataEntries(data: ProfileData): { key: string; label: string; value: string }[] {
+export function profileDataEntries(
+  data: ProfileData,
+): { key: string; label: string; value: string }[] {
   const skip = new Set(["label"]);
   return (Object.keys(data) as (keyof ProfileData)[])
     .filter((k) => !skip.has(k) && data[k])

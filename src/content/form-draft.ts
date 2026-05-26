@@ -8,10 +8,14 @@ import {
 } from "@/lib/form-draft-storage";
 
 function pageUrl(): string {
-  return (location.href.split("#")[0] ?? location.href);
+  return location.href.split("#")[0] ?? location.href;
 }
 
-export async function snapshotFormDraft(): Promise<{ fieldCount: number; savedAt: number; id: string }> {
+export async function snapshotFormDraft(): Promise<{
+  fieldCount: number;
+  savedAt: number;
+  id: string;
+}> {
   const fields = captureFormFields();
   const snapshot = await addSavedSnapshot(pageUrl(), fields);
   return {

@@ -4,7 +4,7 @@ import type { UiTheme } from "@/lib/theme";
 
 export function HeaderToolbar({ children }: { children: ReactNode }) {
   return (
-    <div className="inline-flex overflow-hidden rounded-lg border border-perfil-border bg-perfil-bg/40 shadow-sm">
+    <div className="bg-perfil-bg/40 inline-flex overflow-hidden rounded-lg border border-perfil-border shadow-sm">
       {children}
     </div>
   );

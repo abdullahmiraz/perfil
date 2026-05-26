@@ -27,7 +27,7 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           mkdir -p releases
-          cd dist && zip -r "../releases/perfil-${VERSION}.zip" .
+          cd .output/chrome-mv3 && zip -r "../../releases/perfil-${VERSION}.zip" .
 
       - uses: softprops/action-gh-release@v2
         with:

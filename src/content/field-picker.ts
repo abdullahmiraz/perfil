@@ -179,10 +179,7 @@ function ensureHost(): void {
   panelEl = shadowRoot.querySelector(".panel") as HTMLDivElement;
 }
 
-function renderPanel(
-  options: ReturnType<typeof listProfileValues>,
-  profileLabel: string,
-): void {
+function renderPanel(options: ReturnType<typeof listProfileValues>, profileLabel: string): void {
   if (!panelEl || !shadowRoot) return;
 
   if (!options.length) {

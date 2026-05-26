@@ -7,11 +7,7 @@ export interface FieldErrorMap {
   _form?: string;
 }
 
-const MASTER_PASSWORD_PATTERNS = [
-  /master password/i,
-  /incorrect master/i,
-  /vault locked/i,
-];
+const MASTER_PASSWORD_PATTERNS = [/master password/i, /incorrect master/i, /vault locked/i];
 
 const PIN_PATTERNS = [/pin must/i, /incorrect pin/i];
 

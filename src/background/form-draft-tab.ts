@@ -56,7 +56,9 @@ export async function restoreTabFormDraft(
   return { ok: true, restored: res.restored };
 }
 
-export async function clearTabFormDraft(draftId?: string): Promise<{ ok: true } | { error: string }> {
+export async function clearTabFormDraft(
+  draftId?: string,
+): Promise<{ ok: true } | { error: string }> {
   const tab = await getActiveTab();
   if (isRestrictedUrl(tab.url)) return { error: "Not available on this page" };
   if (draftId) {

@@ -83,7 +83,7 @@ export function RecoveryResetForm({ question, onSuccess, onCancel }: RecoveryRes
     return (
       <form onSubmit={handleVerify} className="mt-2 space-y-2">
         <p className="text-[11px] text-perfil-muted">Step 1 of 2 — confirm your recovery answer</p>
-        <p className="rounded-md border border-perfil-border bg-perfil-bg/50 px-2 py-1.5 text-[11px] font-medium text-perfil-text">
+        <p className="bg-perfil-bg/50 rounded-md border border-perfil-border px-2 py-1.5 text-[11px] font-medium text-perfil-text">
           {question}
         </p>
         <Input

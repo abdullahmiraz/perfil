@@ -30,10 +30,10 @@ Zip appears at `releases/perfil-<version>.zip`.
 
 ## Project setup (developers)
 
-| Requirement | Notes |
-|-------------|--------|
-| **Node.js** | 20+ ([nodejs.org](https://nodejs.org/)) |
-| **npm** | Comes with Node |
+| Requirement | Notes                                      |
+| ----------- | ------------------------------------------ |
+| **Node.js** | 20+ ([nodejs.org](https://nodejs.org/))    |
+| **npm**     | Comes with Node                            |
 | **Browser** | Chrome, Edge, Brave, or other Chromium MV3 |
 
 ```bash
@@ -45,12 +45,13 @@ npm run verify       # typecheck, tests, production build
 
 ### Commands
 
-| Script | Purpose |
-|--------|---------|
-| `npm run dev` | Dev build + HMR; load `dist/` once, keep terminal running |
-| `npm run build` | Production `dist/` only |
-| `npm run package` | `build` + `releases/perfil-<version>.zip` |
-| `npm run verify` | Full CI-style check + HTML report |
+| Script                  | Purpose                                      |
+| ----------------------- | -------------------------------------------- |
+| `npm run dev`           | WXT dev + HMR (opens browser with extension) |
+| `npm run build`         | Production → `.output/chrome-mv3`            |
+| `npm run build:firefox` | Firefox → `.output/firefox-mv3`              |
+| `npm run package`       | `build` + `releases/perfil-<version>.zip`    |
+| `npm run verify`        | Full CI-style check + HTML report            |
 
 ---
 
@@ -89,14 +90,14 @@ Same flow as Chrome (`brave://extensions`, `opera://extensions`, etc.) — **Loa
 npm run dev
 ```
 
-1. Load unpacked from **`dist/`** (while `npm run dev` is running).
-2. Edit code → extension reloads automatically; **refresh the web page** under test.
+1. Run `npm run dev` — WXT loads the extension in Chrome automatically.
+2. Edit code → extension reloads; **refresh the web page** under test.
 
 For a build **without** the dev server (stable service worker):
 
 ```bash
 npm run build
-# load dist/ — do not run npm run dev at the same time
+# Load unpacked from .output/chrome-mv3 — do not run npm run dev at the same time
 ```
 
 ---
@@ -109,8 +110,7 @@ Perfil is **not** on the Chrome Web Store or Edge Add-ons yet. When you are read
 
 Keep these in sync:
 
-- `package.json` → `"version"`
-- `src/manifest.ts` → `version`
+- `package.json` → `"version"` (synced to `wxt.config.ts` manifest via build)
 
 Update `ROADMAP.md` / `README.md` status if needed.
 
@@ -146,7 +146,7 @@ Or push a tag `v*` — the [release workflow](../.github/workflows/release.yml) 
 ### 4. Chrome Web Store
 
 1. [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole)
-2. **New item** → upload **`perfil-<version>.zip`** (or zip `dist/` yourself — manifest at root)
+2. **New item** → upload **`perfil-<version>.zip`** (or zip `.output/chrome-mv3/` — manifest at root)
 3. Fill listing, privacy (single purpose: form fill; local storage only)
 4. Submit for review
 
@@ -160,9 +160,13 @@ Docs: [Publish in Chrome Web Store](https://developer.chrome.com/docs/webstore/p
 
 Docs: [Publish Edge extension](https://learn.microsoft.com/en-us/microsoft-edge/extensions-chromium/publish/publish-extension)
 
-### 6. Firefox (future)
+### 6. Firefox
 
-Firefox needs manifest adjustments or a separate build (see ROADMAP). Not supported in v0.2.x.
+```bash
+npm run build:firefox
+```
+
+Load unpacked from **`.output/firefox-mv3`**. Package with `wxt zip -b firefox` if needed.
 
 ---
 
@@ -178,12 +182,12 @@ On push of tag `v*` (e.g. `v0.2.2`), GitHub Actions:
 
 ## Troubleshooting
 
-| Issue | Fix |
-|-------|-----|
-| Service worker failed (status 3) | Dev: run `npm run dev`. Prod: `npm run build` only, reload extension |
-| Extension won’t load | Folder must contain `manifest.json` at top level — extract zip, don’t load the `.zip` file |
-| Changes not showing | Reload extension on `chrome://extensions`; refresh the tab |
-| `npm run package` fails on Linux | Install `zip`: `sudo apt install zip` |
+| Issue                            | Fix                                                                                        |
+| -------------------------------- | ------------------------------------------------------------------------------------------ |
+| Service worker failed (status 3) | Dev: run `npm run dev`. Prod: `npm run build`, load `.output/chrome-mv3`, reload extension |
+| Extension won’t load             | Folder must contain `manifest.json` at top level — extract zip, don’t load the `.zip` file |
+| Changes not showing              | Reload extension on `chrome://extensions`; refresh the tab                                 |
+| `npm run package` fails on Linux | Install `zip`: `sudo apt install zip`                                                      |
 
 ---
 

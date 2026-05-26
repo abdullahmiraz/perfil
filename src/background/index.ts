@@ -11,19 +11,24 @@ import { defaultVaultSettings } from "@/lib/profile-defaults";
 import { vaultService } from "@/lib/vault-service";
 import type { MessageRequest, MessageResponse, MessageType } from "@/types/messages";
 
-initContextMenu();
+/** Register background listeners (called from WXT `defineBackground` entrypoint). */
+export function initBackground(): void {
+  initContextMenu();
 
-chrome.runtime.onMessage.addListener((request: MessageRequest, _sender, sendResponse) => {
-  void handleMessage(request)
-    .then(async (res) => {
-      sendResponse(res);
-    })
-    .catch((err: unknown) => {
-      console.error("[perfil]", err);
-      sendResponse(fallbackError(request.type, err));
-    });
-  return true;
-});
+  chrome.runtime.onMessage.addListener((request: MessageRequest, _sender, sendResponse) => {
+    void handleMessage(request)
+      .then(async (res) => {
+        sendResponse(res);
+      })
+      .catch((err: unknown) => {
+        console.error("[perfil]", err);
+        sendResponse(fallbackError(request.type, err));
+      });
+    return true;
+  });
+
+  void vaultService.whenReady().then(() => safeNotifyFillContextChanged());
+}
 
 function fallbackError(type: MessageType, err: unknown): MessageResponse<MessageType> {
   const msg = err instanceof Error ? err.message : String(err);
@@ -50,7 +55,6 @@ function fallbackError(type: MessageType, err: unknown): MessageResponse<Message
     case "CANCEL_RECOVERY_RESET":
     case "UPDATE_RECOVERY":
     case "CLEAR_RECOVERY":
-    case "CANCEL_RECOVERY_RESET":
       return { ok: true };
     case "SET_PIN":
     case "CLEAR_PIN":
@@ -86,9 +90,7 @@ function fallbackError(type: MessageType, err: unknown): MessageResponse<Message
   }
 }
 
-async function handleMessage(
-  request: MessageRequest,
-): Promise<MessageResponse<MessageType>> {
+async function handleMessage(request: MessageRequest): Promise<MessageResponse<MessageType>> {
   await vaultService.whenReady();
   if (
     vaultService.isUnlocked() &&
@@ -130,10 +132,7 @@ async function handleMessage(
     case "VERIFY_RECOVERY_ANSWER":
       return vaultService.verifyRecoveryAnswer(request.answer);
     case "RESET_MASTER_PASSWORD": {
-      const res = await vaultService.resetMasterPassword(
-        request.answer,
-        request.newPassword,
-      );
+      const res = await vaultService.resetMasterPassword(request.answer, request.newPassword);
       if (res.ok) await safeNotifyFillContextChanged();
       return res;
     }
@@ -141,11 +140,7 @@ async function handleMessage(
       await vaultService.cancelRecoveryReset();
       return { ok: true };
     case "UPDATE_RECOVERY":
-      return vaultService.updateRecovery(
-        request.question,
-        request.answer,
-        request.masterPassword,
-      );
+      return vaultService.updateRecovery(request.question, request.answer, request.masterPassword);
     case "CLEAR_RECOVERY":
       return vaultService.clearRecovery(request.masterPassword);
     case "GET_PROFILES":
@@ -215,6 +210,3 @@ async function handleMessage(
       throw new Error("Unknown message type");
   }
 }
-
-// Rebuild menus once vault finishes loading (session restore)
-void vaultService.whenReady().then(() => safeNotifyFillContextChanged());

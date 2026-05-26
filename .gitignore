@@ -1,10 +1,32 @@
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
+.output/
+.wxt/
+
+# Release artifacts (CI uploads fresh zips)
 releases/
-*.local
-.DS_Store
-*.log
+
+# Tests & tooling
 test-results/
+coverage/
+*.tsbuildinfo
+
+# Environment
 .env
 .env.*
 !.env.example
+*.local
+
+# OS & editors
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+*.swp
+*.swo
+
+# Cursor / local IDE (not shared)
+.cursor/

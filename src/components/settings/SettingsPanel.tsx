@@ -3,24 +3,23 @@ import { AppearanceSettings } from "@/components/settings/AppearanceSettings";
 import { Alert } from "@/components/ui/Alert";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { Panel } from "@/components/ui/Panel";
 import { Select } from "@/components/ui/Select";
+import { SettingsBlock } from "@/components/ui/SettingsBlock";
 import { sendMessage } from "@/shared/messages";
-import {
-  mapPinSettingsError,
-  validatePinForm,
-  type FieldErrorMap,
-} from "@/lib/form-errors";
+import { mapPinSettingsError, validatePinForm, type FieldErrorMap } from "@/lib/form-errors";
 import { RECOVERY_QUESTION_PRESETS } from "@/lib/vault-recovery";
+import type { Profile } from "@/types/profile";
 import type { AutoLockMinutes, VaultSettings } from "@/types/vault";
 
 const LOCK_OPTIONS: { value: string; label: string }[] = [
-  { value: "5", label: "5 minutes" },
-  { value: "15", label: "15 minutes" },
-  { value: "30", label: "30 minutes" },
+  { value: "5", label: "5 min" },
+  { value: "15", label: "15 min" },
+  { value: "30", label: "30 min" },
   { value: "60", label: "1 hour" },
-  { value: "0", label: "Never (while browser is open)" },
+  { value: "0", label: "Never" },
 ];
+
+const BTN = "btn-compact !w-auto";
 
 export interface SettingsPanelProps {
   onFeedback?: (message: string, variant: "success" | "error") => void;
@@ -28,6 +27,7 @@ export interface SettingsPanelProps {
 
 export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
   const [settings, setSettings] = useState<VaultSettings | null>(null);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
   const [pin, setPin] = useState("");
   const [masterPassword, setMasterPassword] = useState("");
   const [importMode, setImportMode] = useState<"merge" | "replace">("merge");
@@ -45,9 +45,11 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
     void Promise.all([
       sendMessage({ type: "GET_SETTINGS" }),
       sendMessage({ type: "GET_RECOVERY_INFO" }),
-    ]).then(([settingsRes, recoveryRes]) => {
+      sendMessage({ type: "GET_PROFILES" }),
+    ]).then(([settingsRes, recoveryRes, profilesRes]) => {
       setSettings(settingsRes.settings);
       setRecoveryEnabled(recoveryRes.enabled);
+      setProfiles(profilesRes.profiles);
     });
   }, []);
 
@@ -129,8 +131,8 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
     a.download = `perfil-export-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
-      setMessage("Exported");
-      onFeedback?.("Vault exported", "success");
+    setMessage("Exported");
+    onFeedback?.("Vault exported", "success");
   }
 
   async function importJson(file: File) {
@@ -141,6 +143,8 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
       setMessage(msg);
       onFeedback?.(msg, "success");
       setFormError("");
+      const { profiles: list } = await sendMessage({ type: "GET_PROFILES" });
+      setProfiles(list);
     } else {
       const err = res.error ?? "Import failed";
       setFormError(err);
@@ -154,30 +158,42 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
   }
 
   const pinShake = shakeKey > 0;
+  const profileOptions = profiles.map((p) => ({
+    value: p.id,
+    label: p.data.label?.trim() || "Unnamed",
+  }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <AppearanceSettings />
 
-      <Panel>
-        <h2 className="font-semibold tracking-tight">Security & unlock</h2>
-        <p className="mt-1 text-xs leading-relaxed text-perfil-muted">
-          Modeled after Bitwarden: stay unlocked while active, optional PIN, stricter unlock after
-          browser restart.
-        </p>
-
-        <div className="mt-4">
+      {profileOptions.length > 0 && (
+        <SettingsBlock
+          title="Default profile"
+          description="Used for quick fill and context-menu autofill when no profile is chosen"
+        >
           <Select
-            label="Auto-lock after idle"
-            value={String(settings.autoLockMinutes)}
-            onChange={(e) =>
-              save({ autoLockMinutes: Number(e.target.value) as AutoLockMinutes })
-            }
-            options={LOCK_OPTIONS}
+            compact
+            label="Profile"
+            value={settings.defaultProfileId ?? profiles[0]?.id ?? ""}
+            onChange={(e) => save({ defaultProfileId: e.target.value || null })}
+            options={profileOptions}
           />
-        </div>
+        </SettingsBlock>
+      )}
 
-        <label className="mt-4 flex items-center gap-2 text-sm">
+      <SettingsBlock
+        title="Security & unlock"
+        description="Auto-lock, restart policy, and optional PIN"
+      >
+        <Select
+          compact
+          label="Auto-lock after idle"
+          value={String(settings.autoLockMinutes)}
+          onChange={(e) => save({ autoLockMinutes: Number(e.target.value) as AutoLockMinutes })}
+          options={LOCK_OPTIONS}
+        />
+        <label className="mt-2 flex items-center gap-2 text-xs">
           <input
             type="checkbox"
             checked={settings.requireMasterPasswordOnRestart}
@@ -186,17 +202,16 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
           Require master password when browser restarts
         </label>
 
-        <div className="mt-6 border-t border-perfil-border pt-4">
-          <h3 className="text-sm font-medium">Unlock with PIN</h3>
+        <div className="mt-3 border-t border-perfil-border pt-3">
+          <p className="text-xs font-medium text-perfil-text">Unlock with PIN</p>
           {settings.pinEnabled ? (
-            <p className="mt-1 text-xs text-perfil-success">PIN is enabled</p>
+            <p className="text-[11px] text-perfil-success">PIN enabled</p>
           ) : (
-            <p className="mt-1 text-xs text-perfil-muted">
-              Use a short PIN instead of your full password when opening the popup
-            </p>
+            <p className="text-[11px] text-perfil-muted">Short PIN for popup unlock</p>
           )}
-          <div key={`pin-row-${shakeKey}`} className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div key={`pin-row-${shakeKey}`} className="mt-2 grid gap-2 sm:grid-cols-2">
             <Input
+              compact
               label="PIN (4–8 digits)"
               type="password"
               inputMode="numeric"
@@ -210,7 +225,8 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
               shake={pinShake && Boolean(fieldErrors.pin)}
             />
             <Input
-              label="Confirm with master password"
+              compact
+              label="Master password"
               type="password"
               autoComplete="current-password"
               value={masterPassword}
@@ -224,64 +240,54 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
               shake={pinShake && Boolean(fieldErrors.masterPassword)}
             />
           </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button onClick={enablePin} className="!w-auto px-4">
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <Button onClick={enablePin} className={BTN}>
               {settings.pinEnabled ? "Change PIN" : "Enable PIN"}
             </Button>
             {settings.pinEnabled && (
-              <Button variant="secondary" onClick={disablePin} className="!w-auto px-4">
+              <Button variant="secondary" onClick={disablePin} className={BTN}>
                 Disable PIN
               </Button>
             )}
           </div>
         </div>
-      </Panel>
+      </SettingsBlock>
 
-      <Panel>
-        <h2 className="font-semibold tracking-tight">On-page autofill</h2>
-        <p className="mt-1 text-xs text-perfil-muted">
-          Right-click any page for quick fill, or focus a field to pick a value from your profile.
-        </p>
-        <label className="mt-4 flex items-start gap-2 text-sm">
+      <SettingsBlock
+        title="Autofill & forms"
+        description="Field picker, context menu, and per-page form memory (popup Save / Fill)"
+      >
+        <label className="flex items-start gap-2 text-xs">
           <input
             type="checkbox"
-            className="mt-0.5"
+            className="mt-0.5 shrink-0"
             checked={settings.fieldPickerEnabled}
             onChange={(e) => save({ fieldPickerEnabled: e.target.checked })}
           />
           <span>
-            <span className="font-medium">Field picker on focus</span>
-            <span className="mt-0.5 block text-xs text-perfil-muted">
-              When you click into an input, show a small menu to choose which profile value to fill
+            <span className="font-medium text-perfil-text">Field picker on focus</span>
+            <span className="mt-0.5 block text-[11px] text-perfil-muted">
+              Click an input to choose which profile value to fill
             </span>
           </span>
         </label>
-        <p className="mt-3 text-xs text-perfil-muted">
-          Right-click menu: use the <strong className="text-perfil-text">toggle in the popup</strong>{" "}
-          (off by default; page background only, not search boxes).
+        <p className="mt-2 text-[11px] text-perfil-muted">
+          Context menu: toggle in the popup (off by default; skips search boxes).
         </p>
-      </Panel>
+      </SettingsBlock>
 
-      <Panel>
-        <h2 className="font-semibold tracking-tight">Form memory</h2>
-        <p className="mt-1 text-xs text-perfil-muted">
-          Manual saves per exact page URL — use the extension popup on that tab (Save / Fill dropdown).
-        </p>
-      </Panel>
-
-      <Panel>
-        <h2 className="font-semibold tracking-tight">Password recovery</h2>
-        <p className="mt-1 text-xs text-perfil-muted">
-          If you forget your master password, answer this question in the popup to set a new one.
-          Stored only on this device (hashed).
-        </p>
+      <SettingsBlock
+        title="Password recovery"
+        description="Answer in the popup if you forget your master password (hashed on device)"
+      >
         {recoveryEnabled ? (
-          <p className="mt-2 text-xs text-perfil-success">Recovery question is set</p>
+          <p className="mb-2 text-[11px] text-perfil-success">Recovery question is set</p>
         ) : (
-          <p className="mt-2 text-xs text-perfil-muted">Not configured yet</p>
+          <p className="mb-2 text-[11px] text-perfil-muted">Not configured</p>
         )}
-        <div className="mt-3 grid gap-3">
+        <div className="grid gap-2">
           <Select
+            compact
             label="Question"
             value={recoveryPreset}
             onChange={(e) => setRecoveryPreset(e.target.value)}
@@ -292,12 +298,14 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
           />
           {recoveryPreset === "custom" && (
             <Input
+              compact
               label="Your question"
               value={recoveryCustomQ}
               onChange={(e) => setRecoveryCustomQ(e.target.value)}
             />
           )}
           <Input
+            compact
             label="Answer"
             type="password"
             autoComplete="off"
@@ -305,6 +313,7 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
             onChange={(e) => setRecoveryAnswer(e.target.value)}
           />
           <Input
+            compact
             label="Master password (to save)"
             type="password"
             autoComplete="current-password"
@@ -312,9 +321,9 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
             onChange={(e) => setRecoveryMasterPw(e.target.value)}
           />
         </div>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-2 flex flex-wrap gap-1.5">
           <Button
-            className="!w-auto px-4"
+            className={BTN}
             onClick={async () => {
               const question =
                 recoveryPreset === "custom" ? recoveryCustomQ.trim() : recoveryPreset;
@@ -341,7 +350,7 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
           {recoveryEnabled && (
             <Button
               variant="secondary"
-              className="!w-auto px-4"
+              className={BTN}
               onClick={async () => {
                 const res = await sendMessage({
                   type: "CLEAR_RECOVERY",
@@ -361,16 +370,30 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
             </Button>
           )}
         </div>
-      </Panel>
+      </SettingsBlock>
 
-      <Panel>
-        <h2 className="font-semibold tracking-tight">Backup</h2>
-        <p className="mt-1 text-xs text-perfil-muted">Export or import profiles as JSON</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button onClick={exportJson} className="!w-auto px-4">
-            Export JSON
-          </Button>
+      <SettingsBlock title="Backup" description="Export or import profiles as JSON">
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            <Button onClick={exportJson} className={BTN}>
+              Export JSON
+            </Button>
+            <label className={`btn-secondary cursor-pointer ${BTN}`}>
+              Import JSON
+              <input
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void importJson(f);
+                  e.target.value = "";
+                }}
+              />
+            </label>
+          </div>
           <Select
+            compact
             label="Import mode"
             value={importMode}
             onChange={(e) => setImportMode(e.target.value as "merge" | "replace")}
@@ -378,27 +401,20 @@ export function SettingsPanel({ onFeedback }: SettingsPanelProps) {
               { value: "merge", label: "Merge with existing" },
               { value: "replace", label: "Replace all profiles" },
             ]}
-            className="min-w-[180px]"
           />
-          <label className="btn-secondary !w-auto cursor-pointer px-4 py-2.5 text-sm">
-            Import JSON
-            <input
-              type="file"
-              accept="application/json,.json"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void importJson(f);
-              }}
-            />
-          </label>
         </div>
-      </Panel>
+      </SettingsBlock>
 
-      {message && <Alert variant="success">{message}</Alert>}
+      {message && (
+        <Alert variant="success" className="py-2 text-xs">
+          {message}
+        </Alert>
+      )}
       {formError && (
         <div className={shakeKey > 0 ? "perfil-shake" : undefined}>
-          <Alert variant="error">{formError}</Alert>
+          <Alert variant="error" className="py-2 text-xs">
+            {formError}
+          </Alert>
         </div>
       )}
     </div>

@@ -1,0 +1,8 @@
+node_modules
+.output
+.wxt
+dist
+releases
+test-results
+package-lock.json
+coverage

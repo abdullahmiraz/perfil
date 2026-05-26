@@ -4,12 +4,12 @@ How Perfil fits next to common tools (2025–2026). Use this to prioritize roadm
 
 ## Categories
 
-| Category | Examples | Strength | Weakness for profile autofill |
-|----------|----------|----------|-------------------------------|
-| **Password managers** | Bitwarden, 1Password, Dashlane | Encrypted vault, trust | Weak on custom fields, job forms, repeat data entry |
-| **Rule autofill** | [Lightning Autofill](https://addons.mozilla.org/en-US/firefox/addon/lightning-autofill/) | Macros, all field types, power users | **Not encrypted** — vendor says don’t store sensitive data |
-| **AI autofill** | Thunderbit, Superfill | Ambiguous fields, scraping | Cloud/API, privacy review, cost |
-| **Browser built-in** | Chrome autofill | Zero install | Addresses/passwords only, not custom profiles |
+| Category              | Examples                                                                                 | Strength                             | Weakness for profile autofill                              |
+| --------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------- |
+| **Password managers** | Bitwarden, 1Password, Dashlane                                                           | Encrypted vault, trust               | Weak on custom fields, job forms, repeat data entry        |
+| **Rule autofill**     | [Lightning Autofill](https://addons.mozilla.org/en-US/firefox/addon/lightning-autofill/) | Macros, all field types, power users | **Not encrypted** — vendor says don’t store sensitive data |
+| **AI autofill**       | Thunderbit, Superfill                                                                    | Ambiguous fields, scraping           | Cloud/API, privacy review, cost                            |
+| **Browser built-in**  | Chrome autofill                                                                          | Zero install                         | Addresses/passwords only, not custom profiles              |
 
 ## Perfil niche
 
@@ -22,13 +22,13 @@ How Perfil fits next to common tools (2025–2026). Use this to prioritize roadm
 
 ## What users complain about elsewhere
 
-| Pain | Perfil response |
-|------|-----------------|
-| “Autofill put data in the wrong field” | Confidence threshold + manual Scan/Fill |
-| “I don’t trust extensions with my address” | Local-only + real encryption (roadmap P5.1) |
-| “Password manager doesn’t fill custom fields” | Custom fields per profile |
-| “Lightning isn’t safe for real data” | Verifier + AES-GCM vault, recovery Q&A |
-| “I re-type the same long form” | URL-scoped **Save current / Restore** |
+| Pain                                          | Perfil response                             |
+| --------------------------------------------- | ------------------------------------------- |
+| “Autofill put data in the wrong field”        | Confidence threshold + manual Scan/Fill     |
+| “I don’t trust extensions with my address”    | Local-only + real encryption (roadmap P5.1) |
+| “Password manager doesn’t fill custom fields” | Custom fields per profile                   |
+| “Lightning isn’t safe for real data”          | Verifier + AES-GCM vault, recovery Q&A      |
+| “I re-type the same long form”                | URL-scoped **Save current / Restore**       |
 
 ## What we should **not** chase early
 
@@ -41,7 +41,7 @@ How Perfil fits next to common tools (2025–2026). Use this to prioritize roadm
 
 - **RoboForm** / **Dashlane** — profile autofill in paid tiers (encrypted, cloud)
 - **Autofill** (Tohodo) — simple local profiles, older UX
-- **Lightning Autofill** — automation depth; we borrow *form memory* idea only
+- **Lightning Autofill** — automation depth; we borrow _form memory_ idea only
 
 ## Distribution
 

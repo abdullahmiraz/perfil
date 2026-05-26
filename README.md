@@ -20,25 +20,26 @@ Perfil is **not** a password manager. It focuses on what password managers do po
 
 ## Status
 
-| Phase | Scope | Status |
-|-------|--------|--------|
-| **1–2** | Profiles, custom fields, import/export, PIN, form memory | ✅ Done |
-| **3** | AES-256-GCM vault + recovery | ✅ **v0.3.0** |
-| **4** | Checkbox/radio/date fill coverage | 🔜 Next |
-| **5** | Chrome Web Store listing | Planned |
+| Phase   | Scope                                                    | Status        |
+| ------- | -------------------------------------------------------- | ------------- |
+| **1–2** | Profiles, custom fields, import/export, PIN, form memory | ✅ Done       |
+| **3**   | AES-256-GCM vault + recovery                             | ✅ v0.3.0     |
+| **3b**  | WXT build, options UI, Prettier                          | ✅ **v0.3.1** |
+| **4**   | Checkbox/radio/date fill coverage                        | 🔜 Next       |
+| **5**   | Chrome Web Store listing                                 | Planned       |
 
 > **Security:** Vault data is encrypted with AES-256-GCM (PBKDF2). Still avoid payment cards and government IDs. Use a password manager for site logins. See [docs/SECURITY.md](docs/SECURITY.md).
 
-> Full checklist: **[ROADMAP.md](ROADMAP.md)** · Market position: **[docs/MARKET.md](docs/MARKET.md)**
+> Checklist: **[ROADMAP.md](ROADMAP.md)** · Dev/troubleshooting: **[docs/DEV.md](docs/DEV.md)** · Market: **[docs/MARKET.md](docs/MARKET.md)**
 
 ---
 
 ## Download & install
 
-| Method | Who | Steps |
-|--------|-----|--------|
-| **GitHub Release** | End users | [Releases](https://github.com/abdullahmiraz/perfil/releases) → download `perfil-x.y.z.zip` → extract → [load unpacked](docs/RELEASE.md#install-from-a-zip) |
-| **From source** | Developers | Clone repo → `npm install` → `npm run package` → load `dist/` or use the zip in `releases/` |
+| Method             | Who        | Steps                                                                                                                                                      |
+| ------------------ | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **GitHub Release** | End users  | [Releases](https://github.com/abdullahmiraz/perfil/releases) → download `perfil-x.y.z.zip` → extract → [load unpacked](docs/RELEASE.md#install-from-a-zip) |
+| **From source**    | Developers | Clone repo → `npm install` → `npm run package` → load `.output/chrome-mv3` or use the zip in `releases/`                                                   |
 
 Full guide (Chrome, Edge, Brave, store publishing): **[docs/RELEASE.md](docs/RELEASE.md)**
 
@@ -57,35 +58,26 @@ Full guide (Chrome, Edge, Brave, store publishing): **[docs/RELEASE.md](docs/REL
 git clone https://github.com/abdullahmiraz/perfil.git
 cd perfil
 npm install
+npm run start
+```
+
+`npm run start` builds and prints the folder to load on `chrome://extensions` → **Load unpacked** → **`.output/chrome-mv3`**. This works **without** keeping a dev server running.
+
+### Hot reload (optional)
+
+```bash
 npm run dev
 ```
 
-### Load in Chrome
+Leave this terminal **open**. Load **`.output/chrome-mv3-dev`**. Popup scripts are served from `http://localhost:3000` — if you stop `npm run dev`, the popup will be blank and you will see WebSocket errors.
 
-**Option A — Development (hot reload)**  
-Keep `npm run dev` running in a terminal, then:
-
-1. Open `chrome://extensions`
-2. Enable **Developer mode**
-3. **Load unpacked** → select the `dist` folder
-4. After code changes, click **Reload** on the extension card (or save a file — Vite rebuilds)
-
-**Option B — Standalone build (no dev server)**  
-Stop `npm run dev`, then:
-
-```bash
-npm run build
-```
-
-Load the same `dist` folder. The service worker uses bundled files (not localhost).
+See **[docs/DEV.md](docs/DEV.md)** if the extension does not open.
 
 ### Service worker error (status code 3)?
 
-Usually means Chrome could not load the background script:
-
-1. **Dev mode:** `npm run dev` must be running on port **5173** before you load/reload the extension.
-2. **Stale `dist/`:** Run `npm run build` (with dev stopped) OR restart `npm run dev` and reload the extension.
-3. On `chrome://extensions`, click **Errors** under Perfil for the exact line.
+1. Prefer **`npm run start`** and load **`.output/chrome-mv3`** (not `chrome-mv3-dev`).
+2. If using **`npm run dev`**, keep the terminal running.
+3. Check **Errors** on `chrome://extensions` for Perfil.
 
 ### First use
 
@@ -93,11 +85,20 @@ Usually means Chrome could not load the background script:
 2. **Manage profiles** → fill in your details → **Save**.
 3. Open a page with a form → **Scan page** → **Fill page**.
 
+### Options page (profiles & settings)
+
+Open via the popup **Edit** / gear icon, or `chrome-extension://…/options.html`.
+
+| Area         | What you can do                                                 |
+| ------------ | --------------------------------------------------------------- |
+| **Profiles** | Multiple profiles, compact editor, **Duplicate**, custom fields |
+| **Settings** | Theme, default profile, auto-lock & PIN, recovery, JSON backup  |
+
 ---
 
 ## For AI agents & contributors
 
-See **[AGENTS.md](./AGENTS.md)** — build commands, module map, and conventions (kept short to save context tokens).
+See **[AGENTS.md](./AGENTS.md)** — build commands, module map, and conventions.
 
 ## Development
 
@@ -107,106 +108,97 @@ See **[AGENTS.md](./AGENTS.md)** — build commands, module map, and conventions
 npm run verify
 ```
 
-Runs typecheck, tests, build, and writes **`test-results/verification-report.html`** plus **`test-results/fill-demo.json`** with live API scan/fill results.
+Runs format check, typecheck, tests, build, and writes **`test-results/verification-report.html`**.
+
+### Formatting
+
+```bash
+npm run format        # Prettier — write
+npm run format:check  # Prettier — check only (included in verify)
+```
 
 ### Native tests (no browser)
 
 ```bash
-npm test           # run once
-npm run test:watch # watch mode
+npm test
+npm run test:watch
 ```
 
-Programmatic API (same engine as extension):
-
-```typescript
-import { scanForm, fillForm, readFormValues } from "@/lib/fill-api";
-```
-
-### Live UI harness (real-time scan/fill)
+### Live UI harness (fill API only)
 
 ```bash
 npm run dev:harness
 ```
 
-Opens **http://localhost:5173/dev-harness.html** — interactive form with Scan / Fill buttons and results tables (no extension required).
+Opens **http://localhost:5173/** (`tools/harness`) — Scan / Fill without the extension.
 
-### Extension dev (load once, auto-reload)
-
-```bash
-npm run dev
-```
-
-1. Load **unpacked** extension from `dist/` **once** (`chrome://extensions` → Load unpacked).
-2. Keep `npm run dev` running — CRXJS rebuilds and reloads the extension on file changes.
-3. Refresh the **web page** you are testing (content scripts attach per navigation).
-
-Optional manual form page (while `npm run dev` is running): open `http://localhost:5173/test-form.html`
+### Extension dev
 
 ```bash
-npm run build      # Production build → dist/
-npm run package    # build + releases/perfil-<version>.zip
-npm run typecheck  # TypeScript check
+npm run dev              # WXT + HMR
+npm run build            # → .output/chrome-mv3
+npm run build:firefox    # → .output/firefox-mv2
+npm run package          # zip for releases/
 ```
 
-### Project structure
+### Project layout
 
 ```
 src/
-  background/     # Service worker — vault, messaging
-  content/        # Injected on pages — scan & fill
-  popup/          # Toolbar popup UI (React)
-  options/        # Profile editor (React)
-  lib/            # Field detector, matcher, fill engine, vault
-  shared/         # Message types
-  types/          # TypeScript models
+  entrypoints/   # WXT: popup, options, background, content
+  background/    # Service worker logic
+  content/       # Page scripts (no React)
+  lib/           # Vault, fill engine, matchers
+  components/    # Shared React UI
+  popup/         # Popup app
+  options/       # Options app
+  hooks/ types/ shared/ styles/
+fixtures/        # Sample profiles & HTML forms
+public/          # Icons, synced test-form.html
+tools/harness/   # Fill API dev UI (not in extension)
+scripts/ docs/
 ```
 
 ### Tech stack
 
-- **Manifest V3** browser extension
-- **Vite + CRXJS** — build tooling
-- **TypeScript** (strict)
-- **React** — popup & options only
-- **Tailwind CSS** — minimal dark UI
-- **Web Crypto API** — encryption (Phase 2)
+- **Manifest V3** extension
+- **WXT + Vite + React** — [docs/DEV.md](docs/DEV.md)
+- **TypeScript** (strict) · **Tailwind** · **Prettier** · **Web Crypto API**
 
 ---
 
 ## Security model
 
-| Topic | Approach |
-|-------|----------|
-| **Storage** | `chrome.storage.local` — encrypted blob only |
-| **Passwords** | Not stored in Perfil (use a password manager) |
-| **Network** | No profile data sent to servers in v0.1 |
-| **Fill trigger** | User clicks Fill — no autonomous scraping |
-| **Content script** | Receives profile only while vault is unlocked |
+| Topic              | Approach                                     |
+| ------------------ | -------------------------------------------- |
+| **Storage**        | `chrome.storage.local` — encrypted blob only |
+| **Passwords**      | Not stored in Perfil                         |
+| **Network**        | No profile data sent to servers              |
+| **Fill trigger**   | User clicks Fill                             |
+| **Content script** | Profile only while vault is unlocked         |
 
-See [docs/SECURITY.md](docs/SECURITY.md) for details and threat model.
+See [docs/SECURITY.md](docs/SECURITY.md).
 
 ---
 
 ## How matching works
 
-Perfil uses **deterministic rules**, not AI, in v0.1:
-
 1. `autocomplete` attribute (highest confidence)
 2. Field `name`, `id`, `placeholder`, associated `<label>`
 3. Input `type` (`email`, `tel`)
 
-Each profile field has regex patterns (e.g. `first-name`, `given-name` → `firstName`). Matches below the confidence threshold are skipped.
+Regex patterns map labels to profile fields. Low-confidence matches are skipped.
 
 ---
 
 ## Roadmap (summary)
 
 - [x] AES-256-GCM vault (v0.3.0)
-- [ ] Checkbox / radio / date fill (v0.3.1)
+- [x] WXT build + Firefox target
+- [ ] Checkbox / radio / date fill
 - [ ] Chrome Web Store listing
-- [ ] Per-site overrides (if needed)
-- [ ] Firefox (later)
 
-See **[ROADMAP.md](ROADMAP.md)** for the full table.
+See **[ROADMAP.md](ROADMAP.md)**.
 
 ---
 
@@ -214,10 +206,7 @@ See **[ROADMAP.md](ROADMAP.md)** for the full table.
 
 Issues and PRs welcome at [github.com/abdullahmiraz/perfil](https://github.com/abdullahmiraz/perfil).
 
-1. Fork the repo
-2. Create a branch (`git checkout -b feature/my-change`)
-3. Commit with a clear message
-4. Open a PR
+Run `npm run verify` before opening a PR.
 
 ---
 
@@ -229,9 +218,4 @@ MIT — see [LICENSE](LICENSE) (to be added).
 
 ## Related projects
 
-Perfil sits between password managers and AI form fillers:
-
-- Password managers ([1Password](https://1password.com), [Bitwarden](https://bitwarden.com)) — credentials, limited address profiles
-- AI fillers ([Superfill.ai](https://github.com/superfill-ai/superfill.ai/), [Smart Fill](https://github.com/Al-Waleed-IT/smart-fill)) — flexible but API-dependent
-
-**Perfil's niche:** secure, auditable, local personal-data autofill without sending your DOM to the cloud.
+Perfil sits between password managers and AI form fillers — **local, auditable personal-data autofill** without sending your DOM to the cloud.

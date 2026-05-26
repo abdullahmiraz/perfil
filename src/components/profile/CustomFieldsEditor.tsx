@@ -88,25 +88,26 @@ export function CustomFieldsEditor({
   const otherProfiles = profiles.filter((p) => p.id !== profile.id);
 
   return (
-    <div className="mt-8 border-t border-perfil-border pt-6">
+    <div className="mt-4 border-t border-perfil-border pt-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-perfil-muted">
+        <h2 className="text-[10px] font-semibold uppercase tracking-wider text-perfil-muted">
           Custom fields
         </h2>
-        <Button onClick={addField} className="!w-auto px-3 py-1.5 text-xs">
+        <Button onClick={addField} className="btn-compact !w-auto">
           Add field
         </Button>
       </div>
-      <p className="mt-1 text-xs text-perfil-muted">
-        Name fields anything you need (e.g. eye power). They are matched on web forms by label. Click{" "}
-        <strong className="font-medium text-perfil-text">Save profile</strong> above to keep changes.
+      <p className="mt-0.5 text-[11px] text-perfil-muted">
+        Name fields anything you need (e.g. eye power). They are matched on web forms by label.
+        Click <strong className="font-medium text-perfil-text">Save profile</strong> above to keep
+        changes.
       </p>
 
-      <div className="mt-4 space-y-4">
+      <div className="mt-2 space-y-2">
         {fields.map((field) => (
           <div
             key={field.id}
-            className="rounded-xl border border-perfil-border bg-perfil-bg/50 p-4"
+            className="bg-perfil-bg/50 rounded-lg border border-perfil-border p-2.5"
           >
             <div className="flex items-start gap-2">
               <input
@@ -116,23 +117,23 @@ export function CustomFieldsEditor({
                 className="mt-1"
                 aria-label={`Select ${field.label}`}
               />
-              <div className="flex-1 space-y-3">
-                <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex-1 space-y-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                   <Input
+                    compact
                     label="Field name"
                     value={field.label}
                     onChange={(e) => updateField(field.id, { label: e.target.value })}
                   />
                   <Select
+                    compact
                     label="Type"
                     value={field.type}
                     onChange={(e) =>
                       updateField(field.id, {
                         type: e.target.value as CustomFieldType,
                         options:
-                          e.target.value === "select"
-                            ? field.options ?? ["Option 1"]
-                            : undefined,
+                          e.target.value === "select" ? (field.options ?? ["Option 1"]) : undefined,
                       })
                     }
                     options={CUSTOM_FIELD_TYPES.map((t) => ({
@@ -144,15 +145,20 @@ export function CustomFieldsEditor({
                 {field.type === "select" ? (
                   <>
                     <Input
+                      compact
                       label="Options (comma-separated)"
                       value={(field.options ?? []).join(", ")}
                       onChange={(e) =>
                         updateField(field.id, {
-                          options: e.target.value.split(",").map((s) => s.trim()).filter(Boolean),
+                          options: e.target.value
+                            .split(",")
+                            .map((s) => s.trim())
+                            .filter(Boolean),
                         })
                       }
                     />
                     <Select
+                      compact
                       label="Value"
                       value={field.value}
                       onChange={(e) => updateField(field.id, { value: e.target.value })}
@@ -161,6 +167,7 @@ export function CustomFieldsEditor({
                   </>
                 ) : (
                   <Input
+                    compact
                     label="Value"
                     type={
                       field.type === "date"
@@ -181,19 +188,11 @@ export function CustomFieldsEditor({
                 )}
               </div>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button
-                variant="ghost"
-                onClick={() => moveField(field.id, -1)}
-                className="text-xs"
-              >
+            <div className="mt-2 flex flex-wrap gap-1">
+              <Button variant="ghost" onClick={() => moveField(field.id, -1)} className="text-xs">
                 ↑
               </Button>
-              <Button
-                variant="ghost"
-                onClick={() => moveField(field.id, 1)}
-                className="text-xs"
-              >
+              <Button variant="ghost" onClick={() => moveField(field.id, 1)} className="text-xs">
                 ↓
               </Button>
               <Button variant="danger" onClick={() => removeField(field.id)} className="text-xs">
@@ -205,8 +204,9 @@ export function CustomFieldsEditor({
       </div>
 
       {fields.length > 0 && otherProfiles.length > 0 && (
-        <div className="mt-4 flex flex-wrap items-end gap-2 rounded-xl border border-perfil-border p-3">
+        <div className="mt-2 flex flex-wrap items-end gap-1.5 rounded-lg border border-perfil-border p-2">
           <Select
+            compact
             label="Target profile"
             value={targetProfileId}
             onChange={(e) => setTargetProfileId(e.target.value)}
@@ -220,7 +220,7 @@ export function CustomFieldsEditor({
             variant="secondary"
             disabled={selected.size === 0 || !targetProfileId}
             onClick={() => transfer("copy")}
-            className="!w-auto px-3"
+            className="btn-compact !w-auto"
           >
             Copy selected
           </Button>
@@ -228,7 +228,7 @@ export function CustomFieldsEditor({
             variant="secondary"
             disabled={selected.size === 0 || !targetProfileId}
             onClick={() => transfer("move")}
-            className="!w-auto px-3"
+            className="btn-compact !w-auto"
           >
             Move selected
           </Button>

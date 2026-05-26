@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  content: ["./src/**/*.{html,tsx,ts}"],
+  content: ["./src/**/*.{html,tsx,ts}", "./tools/harness/**/*.{html,tsx,ts}"],
   theme: {
     extend: {
       colors: {
@@ -17,13 +17,7 @@ export default {
         },
       },
       fontFamily: {
-        sans: [
-          "Inter Variable",
-          "Inter",
-          "system-ui",
-          "-apple-system",
-          "sans-serif",
-        ],
+        sans: ["Inter Variable", "Inter", "system-ui", "-apple-system", "sans-serif"],
       },
     },
   },

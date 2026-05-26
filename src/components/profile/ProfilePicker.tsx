@@ -14,7 +14,7 @@ export function ProfilePicker({ profiles, value, onChange, compact }: ProfilePic
       label={compact ? undefined : "Profile"}
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className={compact ? "!py-1.5 text-xs min-w-0 max-w-full" : undefined}
+      className={compact ? "min-w-0 max-w-full !py-1.5 text-xs" : undefined}
       options={profiles.map((p) => ({
         value: p.id,
         label: p.data.label || "Unnamed",

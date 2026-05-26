@@ -11,9 +11,7 @@ export type ContentMessage =
   | { type: "CLEAR_FORM_DRAFT"; draftId?: string };
 
 /** Messages sent from the background script to the content script. */
-export type ContentTabMessage =
-  | { type: "FILL_CONTEXT_CHANGED" }
-  | { type: "OPEN_FIELD_PICKER" };
+export type ContentTabMessage = { type: "FILL_CONTEXT_CHANGED" } | { type: "OPEN_FIELD_PICKER" };
 
 export type ContentMessageResponse =
   | { ok: true }

@@ -224,13 +224,13 @@ export function App() {
             compact
           />
         </div>
-        <HoverTip text={`Edit ${profileLabel} — name, email, address, custom fields`}>
+        <HoverTip text={`Open full profiles page — edit ${profileLabel} and all fields`}>
           <button
             type="button"
             onClick={() => void openOptions("profiles")}
-            className="btn-compact shrink-0 rounded-lg border border-perfil-border bg-perfil-surface px-2 py-1.5 text-[11px] font-medium text-perfil-text hover:border-perfil-accent/50"
+            className="btn-compact hover:border-perfil-accent/50 border-perfil-accent/40 bg-perfil-accent/10 shrink-0 rounded-lg border px-2 py-1.5 text-[11px] font-semibold text-perfil-accent"
           >
-            Edit
+            Profiles
           </button>
         </HoverTip>
         <HoverTip text="Find inputs on this tab that match your profile">
@@ -264,7 +264,9 @@ export function App() {
       )}
 
       <SiteToolsPanel
-        onFeedback={(msg, v) => (v === "error" ? feedback.showError(msg) : feedback.showSuccess(msg))}
+        onFeedback={(msg, v) =>
+          v === "error" ? feedback.showError(msg) : feedback.showSuccess(msg)
+        }
       />
     </PageShell>
   );

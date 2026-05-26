@@ -9,7 +9,12 @@ export interface MasterPasswordFormProps {
   onSubmit: (password: string) => Promise<void>;
 }
 
-export function MasterPasswordForm({ mode, busy = false, error, onSubmit }: MasterPasswordFormProps) {
+export function MasterPasswordForm({
+  mode,
+  busy = false,
+  error,
+  onSubmit,
+}: MasterPasswordFormProps) {
   const [password, setPassword] = useState("");
   const [shakeKey, setShakeKey] = useState(0);
 

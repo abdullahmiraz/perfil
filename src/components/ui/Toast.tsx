@@ -122,7 +122,7 @@ export function Toast({
     >
       <div className="flex items-center gap-2 px-3 py-2.5 pb-3 text-sm font-medium">
         <span
-          className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-current/15 text-xs font-bold"
+          className="bg-current/15 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold"
           aria-hidden
         >
           {ICON[variant]}
@@ -130,7 +130,7 @@ export function Toast({
         <span>{content}</span>
       </div>
       {autoDismiss && (
-        <div className="absolute inset-x-0 bottom-0 h-[2px] bg-current/10" aria-hidden>
+        <div className="bg-current/10 absolute inset-x-0 bottom-0 h-[2px]" aria-hidden>
           <div
             key={progressKey}
             className={["toast-progress-bar h-full origin-left", PROGRESS_CLASS[variant]].join(" ")}

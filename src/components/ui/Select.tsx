@@ -9,21 +9,31 @@ export interface SelectOption {
 export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   options: SelectOption[];
+  compact?: boolean;
 }
 
-export function Select({ label, options, className = "", id, ...props }: SelectProps) {
+export function Select({
+  label,
+  options,
+  compact = false,
+  className = "",
+  id,
+  ...props
+}: SelectProps) {
   const selectId = id ?? (label ? label.replace(/\s+/g, "-").toLowerCase() : undefined);
 
   return (
     <div>
       {label && (
-        <Label htmlFor={selectId} className="mb-1">
+        <Label htmlFor={selectId} className={compact ? "label-compact" : "mb-1"}>
           {label}
         </Label>
       )}
       <select
         id={selectId}
-        className={["input-field", className].filter(Boolean).join(" ")}
+        className={["input-field", compact && "input-field--compact", className]
+          .filter(Boolean)
+          .join(" ")}
         {...props}
       >
         {options.map((opt) => (

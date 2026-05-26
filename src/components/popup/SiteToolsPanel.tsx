@@ -25,7 +25,7 @@ function ActionButton({
   accent?: boolean;
 }) {
   return (
-    <HoverTip text={tip} className="flex-1 min-w-0">
+    <HoverTip text={tip} className="min-w-0 flex-1">
       <button
         type="button"
         disabled={disabled}
@@ -34,7 +34,7 @@ function ActionButton({
           "w-full border-l border-perfil-border px-1 py-1.5 text-[11px] font-medium transition-colors first:border-l-0",
           "disabled:opacity-40",
           accent
-            ? "bg-perfil-accent/15 text-perfil-accent hover:bg-perfil-accent/25"
+            ? "bg-perfil-accent/15 hover:bg-perfil-accent/25 text-perfil-accent"
             : "hover:bg-perfil-surface",
           danger ? "text-perfil-danger" : !accent ? "text-perfil-text" : "",
         ].join(" ")}
@@ -166,16 +166,21 @@ export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
         info="Page background only. Save or restore forms from the menu."
       />
 
-      <div className="rounded-lg border border-perfil-border/80 bg-perfil-bg/40 px-2 py-1.5">
+      <div className="border-perfil-border/80 bg-perfil-bg/40 rounded-lg border px-2 py-1.5">
         <div className="mb-1 flex items-center gap-1">
           <HoverTip
             text="Saves match this exact URL. Save the page, then restore after refresh."
             className="min-w-0"
           >
-            <span className="cursor-help text-[11px] font-medium text-perfil-text">Saved forms</span>
+            <span className="cursor-help text-[11px] font-medium text-perfil-text">
+              Saved forms
+            </span>
           </HoverTip>
           {pathLabel && (
-            <span className="ml-auto max-w-[42%] truncate text-[10px] text-perfil-muted" title={status?.pageUrl}>
+            <span
+              className="ml-auto max-w-[42%] truncate text-[10px] text-perfil-muted"
+              title={status?.pageUrl}
+            >
               {pathLabel}
             </span>
           )}
@@ -196,7 +201,7 @@ export function SiteToolsPanel({ onFeedback }: SiteToolsPanelProps) {
               className="!py-1 text-[11px]"
               disabled={!hasSaves}
             />
-            <div className="mt-1 flex w-full overflow-hidden rounded-md border border-perfil-border bg-perfil-bg/50">
+            <div className="bg-perfil-bg/50 mt-1 flex w-full overflow-hidden rounded-md border border-perfil-border">
               <ActionButton
                 tip="Save what's on the page now as a new snapshot"
                 disabled={busy}

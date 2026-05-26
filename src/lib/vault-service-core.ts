@@ -24,10 +24,7 @@ import {
   type SealedVault,
 } from "@/lib/vault-crypto";
 import type { Profile } from "@/types/profile";
-import {
-  isRecoveryAnswerValid,
-  recoveryAnswerVerifier,
-} from "@/lib/vault-recovery";
+import { isRecoveryAnswerValid, recoveryAnswerVerifier } from "@/lib/vault-recovery";
 import type {
   EncryptedVaultBlob,
   VaultExportBundle,
@@ -147,17 +144,13 @@ export class VaultService {
     if (this.idleTimer) clearTimeout(this.idleTimer);
     const minutes = this.payload?.settings.autoLockMinutes ?? 15;
     if (minutes === 0 || !this.isUnlocked()) return;
-    this.idleTimer = setTimeout(
-      () => {
-        void this.lock();
-      },
-      minutes * 60_000,
-    );
+    this.idleTimer = setTimeout(() => {
+      void this.lock();
+    }, minutes * 60_000);
   }
 
   getStatus(): { status: VaultStatus; profileCount: number } {
-    const count =
-      this.status === "unlocked" && this.payload ? this.payload.profiles.length : 0;
+    const count = this.status === "unlocked" && this.payload ? this.payload.profiles.length : 0;
     return { status: this.status, profileCount: count };
   }
 

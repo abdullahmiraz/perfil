@@ -16,12 +16,20 @@ const RULES: Rule[] = [
   { key: "email", weight: 1, patterns: [/e-?mail/, /\bemail\b/] },
   { key: "phone", weight: 1, patterns: [/phone/, /mobile/, /tel\b/, /contact.?number/] },
   { key: "firstName", weight: 0.95, patterns: [/first.?name/, /given.?name/, /\bfname\b/] },
-  { key: "lastName", weight: 0.95, patterns: [/last.?name/, /family.?name/, /surname/, /\blname\b/] },
+  {
+    key: "lastName",
+    weight: 0.95,
+    patterns: [/last.?name/, /family.?name/, /surname/, /\blname\b/],
+  },
   { key: "fullName", weight: 0.9, patterns: [/^name$/, /full.?name/, /\bdisplay.?name\b/] },
   { key: "company", weight: 0.9, patterns: [/company/, /organization/, /employer/] },
   { key: "jobTitle", weight: 0.9, patterns: [/job.?title/, /position/, /role\b/] },
   { key: "website", weight: 0.85, patterns: [/website/, /url\b/, /portfolio/] },
-  { key: "addressLine1", weight: 0.95, patterns: [/address.?line.?1/, /street.?address/, /\baddress\b/, /addr1/] },
+  {
+    key: "addressLine1",
+    weight: 0.95,
+    patterns: [/address.?line.?1/, /street.?address/, /\baddress\b/, /addr1/],
+  },
   { key: "addressLine2", weight: 0.9, patterns: [/address.?line.?2/, /apt/, /suite/, /addr2/] },
   { key: "city", weight: 0.95, patterns: [/city/, /locality/, /town\b/] },
   { key: "state", weight: 0.9, patterns: [/state/, /province/, /region\b/] },
@@ -46,16 +54,13 @@ const AUTOCOMPLETE_MAP: Record<string, ProfileFieldKey> = {
   "address-level1": "state",
   "postal-code": "postalCode",
   country: "country",
-  "organization": "company",
+  organization: "company",
   "organization-title": "jobTitle",
   url: "website",
   bday: "dateOfBirth",
 };
 
-export function matchField(
-  field: SerializableField,
-  data: ProfileData,
-): MatchCandidate | null {
+export function matchField(field: SerializableField, data: ProfileData): MatchCandidate | null {
   const ac = field.autocomplete.replace(/^section-\w+\s+/i, "").trim();
   if (ac && AUTOCOMPLETE_MAP[ac]) {
     const key = AUTOCOMPLETE_MAP[ac];

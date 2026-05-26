@@ -20,6 +20,13 @@ function run(cmd, args) {
 mkdirSync(outDir, { recursive: true });
 
 const steps = [];
+const formatCheck = run("npm", ["run", "format:check"]);
+steps.push({
+  name: "prettier",
+  ok: formatCheck.ok,
+  output: formatCheck.stderr || formatCheck.stdout,
+});
+
 const typecheck = run("npm", ["run", "typecheck"]);
 steps.push({ name: "typecheck", ok: typecheck.ok, output: typecheck.stderr || typecheck.stdout });
 
@@ -37,9 +44,7 @@ const fillApiOk = /fill-api\.test\.ts[\s\S]*?✓|fill-api[\s\S]*passed/i.test(te
 
 let fillDemo = null;
 try {
-  fillDemo = JSON.parse(
-    readFileSync(join(outDir, "fill-demo.json"), "utf8"),
-  );
+  fillDemo = JSON.parse(readFileSync(join(outDir, "fill-demo.json"), "utf8"));
 } catch {
   /* demo step may have failed */
 }
@@ -50,8 +55,8 @@ const report = {
   fillApiVerified: fillApiOk,
   fillDemo,
   steps,
-  harnessUrl: "http://localhost:5173/dev-harness.html",
-  testFormUrl: "http://localhost:5173/test-form.html",
+  harnessUrl: "http://localhost:5173/",
+  testFormUrl: "http://localhost:3000/test-form.html",
 };
 
 writeFileSync(join(outDir, "verification-report.json"), JSON.stringify(report, null, 2));
@@ -69,12 +74,16 @@ a{color:#4a9ff5}
 <ul>${steps.map((s) => `<li class="${s.ok ? "pass" : "fail"}">${s.name}: ${s.ok ? "OK" : "FAIL"}</li>`).join("")}</ul>
 <p>Live UI harness: <a href="${report.harnessUrl}">${report.harnessUrl}</a> (run <code>npm run dev:harness</code>)</p>
 <p>Static test form: <a href="${report.testFormUrl}">${report.testFormUrl}</a></p>
-${report.fillDemo ? `<h2>Fill API results (automated)</h2>
+${
+  report.fillDemo
+    ? `<h2>Fill API results (automated)</h2>
 <table border="1" cellpadding="6" style="border-collapse:collapse;width:100%">
 <tr><th>Field</th><th>Maps to</th><th>Value</th><th>Filled</th></tr>
 ${report.fillDemo.fill.rows.map((r) => `<tr><td>${r.label}</td><td>${r.fieldKey}</td><td>${r.value}</td><td>${r.filled ? "✓" : "✗"}</td></tr>`).join("")}
 </table>
-<p>Scan: ${report.fillDemo.scan.matchCount}/${report.fillDemo.scan.fieldCount} fields matched · Fill: ${report.fillDemo.fill.filled} filled, ${report.fillDemo.fill.skipped} skipped</p>` : ""}
+<p>Scan: ${report.fillDemo.scan.matchCount}/${report.fillDemo.scan.fieldCount} fields matched · Fill: ${report.fillDemo.fill.filled} filled, ${report.fillDemo.fill.skipped} skipped</p>`
+    : ""
+}
 <h2>Outputs</h2>
 ${steps.map((s) => `<h3>${s.name}</h3><pre>${escapeHtml(s.output.slice(-2000))}</pre>`).join("")}
 </body></html>`;

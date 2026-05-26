@@ -56,6 +56,14 @@
     @apply w-full rounded-xl border border-perfil-border bg-perfil-bg px-3 py-2.5 text-sm text-perfil-text outline-none transition-colors placeholder:text-perfil-muted placeholder:opacity-60 focus:border-perfil-accent focus:ring-2 focus:ring-perfil-accent focus:ring-opacity-20;
   }
 
+  .input-field--compact {
+    @apply rounded-lg px-2.5 py-1.5 text-[13px];
+  }
+
+  .label-compact {
+    @apply mb-1 text-[11px] font-medium;
+  }
+
   .input-field--error {
     @apply border-perfil-danger focus:border-perfil-danger focus:ring-perfil-danger focus:ring-opacity-25;
   }

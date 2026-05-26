@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { duplicateCustomField } from "@/lib/custom-field";
 import { createProfile } from "@/lib/profile-defaults";
 import { migrateProfile } from "@/lib/profile-migrate";
 import { toErrorMessage } from "@/shared/errors";
@@ -20,6 +21,7 @@ export interface UseProfilesResult {
   updateCustomFields: (fields: CustomField[]) => void;
   save: () => Promise<boolean>;
   addProfile: () => Promise<void>;
+  duplicateProfile: () => Promise<void>;
   removeProfile: () => Promise<boolean>;
   reload: () => Promise<void>;
   clearStatus: () => void;
@@ -128,6 +130,31 @@ export function useProfiles(enabled: boolean): UseProfilesResult {
     }
   }, [profiles.length, applyProfile]);
 
+  const duplicateProfile = useCallback(async () => {
+    if (!draft || !activeId) return;
+    const source = profiles.find((p) => p.id === activeId);
+    if (!source) return;
+    setAdding(true);
+    setError(null);
+    try {
+      const baseLabel = draft.label?.trim() || "Profile";
+      const created = createProfile(`${baseLabel} (copy)`, {
+        ...draft,
+        label: `${baseLabel} (copy)`,
+      });
+      created.customFields = source.customFields.map(duplicateCustomField);
+      const { profile } = await sendMessage({ type: "SAVE_PROFILE", profile: created });
+      const migrated = migrateProfile(profile);
+      setProfiles((prev) => [...prev, migrated]);
+      applyProfile(migrated);
+      setStatusMessage("Profile duplicated");
+    } catch (e) {
+      setError(toErrorMessage(e, "Could not duplicate profile"));
+    } finally {
+      setAdding(false);
+    }
+  }, [activeId, draft, profiles, applyProfile]);
+
   const removeProfile = useCallback(async (): Promise<boolean> => {
     if (!activeId || profiles.length <= 1) return false;
     setSaving(true);
@@ -161,6 +188,7 @@ export function useProfiles(enabled: boolean): UseProfilesResult {
     updateCustomFields: setCustomFields,
     save,
     addProfile,
+    duplicateProfile,
     removeProfile,
     reload,
     clearStatus: () => setStatusMessage(""),

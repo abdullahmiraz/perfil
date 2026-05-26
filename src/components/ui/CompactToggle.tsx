@@ -9,9 +9,7 @@ export interface CompactToggleProps {
 }
 
 export function CompactToggle({ checked, onChange, label, info, disabled }: CompactToggleProps) {
-  const labelEl = (
-    <span className="truncate">{label}</span>
-  );
+  const labelEl = <span className="truncate">{label}</span>;
 
   return (
     <div className="flex items-center justify-between gap-2 py-1">
@@ -38,7 +36,7 @@ export function CompactToggle({ checked, onChange, label, info, disabled }: Comp
       >
         <span
           className={[
-            "absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
+            "absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
             checked ? "translate-x-4" : "",
           ].join(" ")}
         />

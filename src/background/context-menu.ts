@@ -1,4 +1,8 @@
-import { clearTabFormDraft, restoreTabFormDraft, saveTabFormDraft } from "@/background/form-draft-tab";
+import {
+  clearTabFormDraft,
+  restoreTabFormDraft,
+  saveTabFormDraft,
+} from "@/background/form-draft-tab";
 import { fillActiveTab, scanActiveTab } from "@/background/fill-tab";
 import { vaultService } from "@/lib/vault-service";
 

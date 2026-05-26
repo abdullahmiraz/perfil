@@ -26,14 +26,14 @@ The master password is used only in the background to derive keys and verify unl
 
 ## Vault encryption (v0.3+)
 
-| Piece | Implementation |
-|-------|----------------|
-| Payload | AES-256-GCM |
-| Key derivation | PBKDF2-SHA256, 310,000 iterations, per-vault salt |
-| Envelope | Random DEK; password-wrapped DEK in blob |
-| PIN | Optional PIN-wrapped DEK (quick unlock) |
-| Recovery | Optional recovery-answer-wrapped DEK (forgot-password reset) |
-| Verifier | Master password check before unwrap (legacy compat) |
+| Piece          | Implementation                                               |
+| -------------- | ------------------------------------------------------------ |
+| Payload        | AES-256-GCM                                                  |
+| Key derivation | PBKDF2-SHA256, 310,000 iterations, per-vault salt            |
+| Envelope       | Random DEK; password-wrapped DEK in blob                     |
+| PIN            | Optional PIN-wrapped DEK (quick unlock)                      |
+| Recovery       | Optional recovery-answer-wrapped DEK (forgot-password reset) |
+| Verifier       | Master password check before unwrap (legacy compat)          |
 
 Legacy vaults (Phase 1 base64) **migrate to v3** on the next successful password unlock.
 
@@ -56,13 +56,13 @@ Legacy vaults (Phase 1 base64) **migrate to v3** on the next successful password
 
 ## Permissions
 
-| Permission | Why |
-|------------|-----|
-| `storage` | Encrypted vault blob |
-| `activeTab` | Operate on the tab the user is viewing |
-| `scripting` | Inject fill logic when needed |
-| `contextMenus` | Optional page menu |
-| `<all_urls>` | Form autofill on sites the user visits |
+| Permission     | Why                                    |
+| -------------- | -------------------------------------- |
+| `storage`      | Encrypted vault blob                   |
+| `activeTab`    | Operate on the tab the user is viewing |
+| `scripting`    | Inject fill logic when needed          |
+| `contextMenus` | Optional page menu                     |
+| `<all_urls>`   | Form autofill on sites the user visits |
 
 No analytics, no remote profile servers.
 

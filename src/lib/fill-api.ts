@@ -32,11 +32,20 @@ export interface FillReport extends FillResult {
   rows: FillFieldRow[];
 }
 
-function fieldLabel(field: { label: string; name: string; id: string; placeholder: string }): string {
+function fieldLabel(field: {
+  label: string;
+  name: string;
+  id: string;
+  placeholder: string;
+}): string {
   return field.label || field.name || field.id || field.placeholder || "field";
 }
 
-export function scanForm(profile: Profile, root: ParentNode = document, minConfidence = 0.55): ScanReport {
+export function scanForm(
+  profile: Profile,
+  root: ParentNode = document,
+  minConfidence = 0.55,
+): ScanReport {
   const fields = detectFields(root);
   const rows: FieldScanRow[] = fields.map((field) => {
     const match = matchProfileField(field, profile);

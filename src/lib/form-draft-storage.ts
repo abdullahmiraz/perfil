@@ -5,7 +5,9 @@ const SAVED_KEY = "perfil_saved_forms_v2";
 const MAX_SAVES_PER_URL = 10;
 
 function readAll(): Promise<SavedFormSnapshot[]> {
-  return chrome.storage.local.get(SAVED_KEY).then((r) => (r[SAVED_KEY] as SavedFormSnapshot[]) ?? []);
+  return chrome.storage.local
+    .get(SAVED_KEY)
+    .then((r) => (r[SAVED_KEY] as SavedFormSnapshot[]) ?? []);
 }
 
 function writeAll(list: SavedFormSnapshot[]): Promise<void> {
@@ -29,9 +31,7 @@ export function formatSnapshotLabel(savedAt: number, fieldCount: number): string
 export async function listSavedForPage(pageUrl: string): Promise<SavedFormSnapshot[]> {
   const key = pageUrlKey(pageUrl);
   const all = await readAll();
-  return all
-    .filter((s) => pageUrlKey(s.pageUrl) === key)
-    .sort((a, b) => b.savedAt - a.savedAt);
+  return all.filter((s) => pageUrlKey(s.pageUrl) === key).sort((a, b) => b.savedAt - a.savedAt);
 }
 
 export async function getSavedSnapshot(id: string): Promise<SavedFormSnapshot | null> {

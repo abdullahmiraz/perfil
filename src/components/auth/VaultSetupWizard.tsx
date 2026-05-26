@@ -28,8 +28,7 @@ export function VaultSetupWizard({ busy = false, error, onSubmit }: VaultSetupWi
   const [openProfilesAfter, setOpenProfilesAfter] = useState(true);
 
   const displayError = localError ?? error ?? null;
-  const recoveryQuestion =
-    questionPreset === "custom" ? customQuestion.trim() : questionPreset;
+  const recoveryQuestion = questionPreset === "custom" ? customQuestion.trim() : questionPreset;
 
   function next() {
     setLocalError(null);
@@ -69,9 +68,7 @@ export function VaultSetupWizard({ busy = false, error, onSubmit }: VaultSetupWi
         fieldPickerEnabled,
         contextMenuEnabled: false,
       },
-      recovery: useRecovery
-        ? { question: recoveryQuestion, answer: recoveryAnswer }
-        : undefined,
+      recovery: useRecovery ? { question: recoveryQuestion, answer: recoveryAnswer } : undefined,
     };
     await onSubmit(password, options);
     if (openProfilesAfter) {
@@ -90,7 +87,7 @@ export function VaultSetupWizard({ busy = false, error, onSubmit }: VaultSetupWi
 
       {step === 0 && (
         <div className="space-y-2 text-[11px] leading-relaxed text-perfil-muted">
-          <p className="text-perfil-text font-medium">Fill forms with your saved profiles</p>
+          <p className="font-medium text-perfil-text">Fill forms with your saved profiles</p>
           <ul className="list-inside list-disc space-y-1">
             <li>One encrypted vault on this device — no account</li>
             <li>Scan and fill job apps, checkout, contact forms</li>

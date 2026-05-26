@@ -7,7 +7,7 @@ export interface PageShellProps {
 
 const WIDTH_CLASS = {
   popup: "w-[320px] p-4",
-  options: "mx-auto max-w-3xl p-8 md:p-10",
+  options: "mx-auto max-w-2xl px-4 py-4 md:px-5 md:py-5",
 };
 
 export function PageShell({ children, width = "popup" }: PageShellProps) {

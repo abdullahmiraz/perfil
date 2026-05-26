@@ -2,7 +2,12 @@ import type { FillResult } from "@/types/fill";
 import type { FillContext } from "@/types/fill-context";
 import type { FormDraftStatus } from "@/types/form-draft";
 import type { Profile } from "@/types/profile";
-import type { VaultRecoveryInfo, VaultSettings, VaultSetupOptions, VaultStatus } from "@/types/vault";
+import type {
+  VaultRecoveryInfo,
+  VaultSettings,
+  VaultSetupOptions,
+  VaultStatus,
+} from "@/types/vault";
 
 export interface MessageResponses {
   GET_STATUS: { status: VaultStatus; profileCount: number };

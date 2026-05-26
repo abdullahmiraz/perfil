@@ -6,42 +6,54 @@
 
 **Perfil** — Chrome MV3 extension for **local, secure personal-data form autofill** (not passwords).
 
-| Layer | Path | Role |
-|-------|------|------|
-| Background | `src/background/` | Vault, messaging, tab bridge |
-| Content | `src/content/` | Scan/fill DOM (vanilla TS, no React) |
-| UI | `src/popup/`, `src/options/` | React — thin shells only |
-| Core logic | `src/lib/` | Matcher, fill engine, `vault-crypto.ts` |
-| Shared UI | `src/components/` | Reusable React components |
-| Hooks | `src/hooks/` | `useVault`, `useProfiles`, `useFillActions` |
-| Types | `src/types/` | Split by domain — import from `@/types` |
+| Layer       | Path                         | Role                                               |
+| ----------- | ---------------------------- | -------------------------------------------------- |
+| Entrypoints | `src/entrypoints/`           | WXT wrappers (popup, options, background, content) |
+| Background  | `src/background/`            | Vault, messaging, tab bridge                       |
+| Content     | `src/content/`               | Scan/fill DOM (vanilla TS, no React)               |
+| UI          | `src/popup/`, `src/options/` | React apps (imported from entrypoints)             |
+| Core logic  | `src/lib/`                   | Matcher, fill engine, `vault-crypto.ts`            |
+| Shared UI   | `src/components/`            | Reusable React components                          |
+| Hooks       | `src/hooks/`                 | `useVault`, `useProfiles`, `useFillActions`        |
+| Types       | `src/types/`                 | Split by domain — import from `@/types`            |
 
 ## Commands (run before marking work done)
 
 ```bash
-npm run verify    # typecheck + test + build + write test-results/report
-npm test          # native tests — prefer this over manual browser checks
+npm run verify       # format check + typecheck + test + build + report
+npm run format       # Prettier — write (run before commit if editor has no format-on-save)
+npm run format:check # Prettier — CI-style check only
+npm test             # native tests — prefer this over manual browser checks
 npm run typecheck
 npm run build
-npm run package   # build + releases/perfil-<version>.zip
-npm run dev:harness  # live scan/fill UI at /dev-harness.html
+npm run package      # build + releases/perfil-<version>.zip
+npm run dev:harness  # fill API UI at tools/harness (http://localhost:5173)
 ```
+
+Formatting: **Prettier** + **EditorConfig** (`.prettierrc` → `prettier.config.mjs`). Use LF line endings. Tailwind class order is sorted via `prettier-plugin-tailwindcss`.
 
 Release / sideload / store upload: **`docs/RELEASE.md`**
 
-Dev extension (load `dist/` **once**, then keep `npm run dev` running for HMR):
+Build output: **`.output/chrome-mv3`** (production, no dev server) or **`.output/chrome-mv3-dev`** (requires `npm run dev` running).
 
 ```bash
-npm run dev
+npm run start        # build + print load path (recommended for manual testing)
+npm run dev          # HMR — must keep terminal open; load chrome-mv3-dev
+npm run build:firefox  # .output/firefox-mv2
 ```
 
-Manual form page: `http://localhost:5173/test-form.html`
+WebSocket `localhost:3000` errors = dev build loaded while `npm run dev` is stopped. See **docs/DEV.md**.
+
+Dev / troubleshooting: **`docs/DEV.md`**
+
+Manual form page (with `npm run dev`): WXT dev server — see terminal for URL + `/test-form.html`  
+Fill harness (no extension): `npm run dev:harness` → `http://localhost:5173/`
 
 ## Conventions
 
 ### Do
 
-- Put **sample / test data** in `fixtures/` (JSON profiles, HTML forms) — see `docs/DATA.md`
+- Put **sample / test data** in `fixtures/` — see `docs/ARCHITECTURE.md` (fixtures section)
 - Load fixtures via `test/helpers/fixtures.ts` (tests) or `profileFromFixture()` (runtime)
 - Add UI via `src/components/` — reuse `Button`, `Input`, `Panel`, etc.
 - Put new types in `src/types/<domain>.ts`, re-export from `src/types/index.ts`
@@ -49,6 +61,7 @@ Manual form page: `http://localhost:5173/test-form.html`
 - Keep content script **framework-free** (no React in `src/content/`)
 - Use `sendMessage` from `@/shared/messages` in UI; never access `chrome.storage` from popup/options for secrets
 - Run `npm test` after changes to `src/lib/`
+- Run `npm run format` (or format-on-save) so CI `format:check` passes
 
 ### Do not
 
@@ -100,4 +113,4 @@ src/components/           reusable UI
 
 ## Roadmap context
 
-See **ROADMAP.md** and **docs/MARKET.md**. Next practical work: **P6 checkbox/radio fill**, then **P7 store listing**. Do not start AI/BYOK unless explicitly requested.
+See **ROADMAP.md**, **docs/MARKET.md**, **docs/DEV.md**. Next practical work: **P6 checkbox/radio fill**, then **P7 store listing**. Do not start AI/BYOK unless explicitly requested.

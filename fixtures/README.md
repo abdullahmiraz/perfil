@@ -2,10 +2,10 @@
 
 **Code loads data from here — do not embed sample profiles or forms in `.ts` / `.tsx` files.**
 
-| Path | Purpose |
-|------|---------|
+| Path              | Purpose                                                                          |
+| ----------------- | -------------------------------------------------------------------------------- |
 | `profiles/*.json` | Sample profiles (`personal-default` seeds new vaults, `demo`, `contact-full`, …) |
-| `forms/*.html` | HTML forms for scan/fill tests and dev harness |
+| `forms/*.html`    | HTML forms for scan/fill tests and dev harness                                   |
 
 ## Add a profile fixture
 

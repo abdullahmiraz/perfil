@@ -13,5 +13,9 @@ const VARIANT_CLASS: Record<AlertVariant, string> = {
 };
 
 export function Alert({ variant = "info", children, className = "" }: AlertProps) {
-  return <p className={["text-xs", VARIANT_CLASS[variant], className].filter(Boolean).join(" ")}>{children}</p>;
+  return (
+    <p className={["text-xs", VARIANT_CLASS[variant], className].filter(Boolean).join(" ")}>
+      {children}
+    </p>
+  );
 }

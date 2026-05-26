@@ -37,8 +37,7 @@ function resolvedPalette(theme: UiTheme): Record<string, string> {
   if (theme === "light") return LIGHT_VARS;
   if (theme === "dark") return DARK_VARS;
   const dark =
-    typeof window !== "undefined" &&
-    window.matchMedia("(prefers-color-scheme: dark)").matches;
+    typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches;
   return dark ? DARK_VARS : LIGHT_VARS;
 }
 

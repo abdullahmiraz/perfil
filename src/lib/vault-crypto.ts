@@ -27,13 +27,9 @@ function isLegacyBlob(blob: EncryptedVaultBlob): boolean {
 
 async function deriveKey(password: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
   const enc = new TextEncoder();
-  const base = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(password),
-    "PBKDF2",
-    false,
-    ["deriveKey"],
-  );
+  const base = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, [
+    "deriveKey",
+  ]);
   return crypto.subtle.deriveKey(
     {
       name: "PBKDF2",
@@ -52,7 +48,10 @@ async function derivePinKey(pin: string, salt: Uint8Array<ArrayBuffer>): Promise
   return deriveKey(`perfil-pin:${pin}`, salt);
 }
 
-async function deriveRecoveryKey(answer: string, salt: Uint8Array<ArrayBuffer>): Promise<CryptoKey> {
+async function deriveRecoveryKey(
+  answer: string,
+  salt: Uint8Array<ArrayBuffer>,
+): Promise<CryptoKey> {
   return deriveKey(`perfil-recovery:${normalizeRecoveryAnswer(answer)}`, salt);
 }
 
@@ -75,10 +74,7 @@ async function decryptBytes(
 }
 
 async function generateDek(): Promise<CryptoKey> {
-  return crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, [
-    "encrypt",
-    "decrypt",
-  ]);
+  return crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
 }
 
 async function wrapDek(dek: CryptoKey, wrappingKey: CryptoKey): Promise<string> {
@@ -238,7 +234,9 @@ export async function resetVaultPassword(
     payload = decodeLegacyPayload(blob.ciphertext);
   } else {
     if (!blob.recoveryWrappedDek) {
-      throw new Error("Recovery cannot reset this vault — update recovery in Settings while logged in");
+      throw new Error(
+        "Recovery cannot reset this vault — update recovery in Settings while logged in",
+      );
     }
     const salt = b64ToBytes(blob.salt);
     const recoveryKey = await deriveRecoveryKey(answer, salt);

@@ -7,6 +7,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string | null;
   /** Brief shake when `error` is set (e.g. after failed submit). */
   shake?: boolean;
+  compact?: boolean;
 }
 
 export function Input({
@@ -14,6 +15,7 @@ export function Input({
   hint,
   error,
   shake = false,
+  compact = false,
   className = "",
   id,
   "aria-invalid": ariaInvalid,
@@ -25,7 +27,7 @@ export function Input({
   return (
     <div className={shake && hasError ? "perfil-shake" : undefined}>
       {label && (
-        <Label htmlFor={inputId} className="mb-1.5">
+        <Label htmlFor={inputId} className={compact ? "label-compact" : "mb-1.5"}>
           {label}
         </Label>
       )}
@@ -33,6 +35,7 @@ export function Input({
         id={inputId}
         className={[
           "input-field",
+          compact && "input-field--compact",
           hasError && "input-field--error",
           className,
         ]
@@ -43,7 +46,11 @@ export function Input({
         {...props}
       />
       {error && (
-        <p id={inputId ? `${inputId}-error` : undefined} className="mt-1.5 text-xs text-perfil-danger" role="alert">
+        <p
+          id={inputId ? `${inputId}-error` : undefined}
+          className="mt-1.5 text-xs text-perfil-danger"
+          role="alert"
+        >
           {error}
         </p>
       )}
